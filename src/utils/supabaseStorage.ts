@@ -28,7 +28,8 @@ export async function loadPlayers(): Promise<Player[]> {
     return data.map(p => ({
         id: p.id,
         name: p.name,
-        createdAt: p.created_at
+        createdAt: p.created_at,
+        ...(p.user_id && { user_id: p.user_id }) // Include user_id if present
     }));
 }
 
@@ -69,6 +70,85 @@ export async function removePlayer(id: string): Promise<boolean> {
     }
 
     return true;
+}
+
+/**
+ * Link a player to a user account (admin/game_manager only)
+ */
+export async function linkPlayerToUser(playerId: string, userId: string): Promise<boolean> {
+    const { error } = await supabase.rpc('link_player_to_user', {
+        player_uuid: playerId,
+        user_uuid: userId || null  // Pass null for unlinking
+    });
+
+    if (error) {
+        console.error('Error linking player to user:', error);
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * Get player associated with a user ID
+ */
+export async function getPlayerByUserId(userId: string): Promise<Player | null> {
+    const { data, error } = await supabase.rpc('get_player_by_user_id', {
+        user_uuid: userId
+    });
+
+    if (error) {
+        console.error('Error getting player by user ID:', error);
+        return null;
+    }
+
+    if (!data || data.length === 0) {
+        return null;
+    }
+
+    return data[0];
+}
+
+/**
+ * Get stats for a specific player for a given month
+ */
+export async function getUserStats(playerId: string, month: string): Promise<MonthlyStats | null> {
+    const { data, error } = await supabase
+        .rpc('get_monthly_stats', { target_month: month });
+
+    if (error) {
+        console.error('Error getting user stats:', error);
+        return null;
+    }
+
+    const playerStats = data?.find((s: any) => s.player_id === playerId);
+    if (!playerStats) {
+        return null;
+    }
+
+    return {
+        playerId: playerStats.player_id,
+        playerName: playerStats.player_name,
+        gamesPlayed: Number(playerStats.games_played),
+        daysPlayed: Number(playerStats.days_played),
+        totalWins: Number(playerStats.total_wins),
+        totalLosses: Number(playerStats.total_losses),
+        rating: 1500 // TODO: Implement rating calculation
+    };
+}
+
+/**
+ * Get game history for a specific player for a given month
+ */
+export async function getUserGameHistory(playerId: string, month: string): Promise<DailyGame[]> {
+    const allGames = await loadMonthGames(month);
+
+    // Filter games where the player participated
+    return allGames.filter(game =>
+        game.groups.some(group =>
+            group.players.some(player => player.id === playerId)
+        )
+    );
 }
 
 /**

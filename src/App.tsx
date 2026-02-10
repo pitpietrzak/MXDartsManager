@@ -11,6 +11,8 @@ import { UserMenu } from './components/UserMenu';
 import { RoleManager } from './components/RoleManager';
 import { TodaysGames } from './components/TodaysGames';
 import { ManualGroupCreator } from './components/ManualGroupCreator';
+import { PlayerClaimDialog } from './components/PlayerClaimDialog';
+import { MyProfile } from './components/MyProfile';
 import { useAuth } from './contexts/AuthContext';
 import {
   loadPlayers,
@@ -22,13 +24,17 @@ import {
   calculateMonthlyStats as dbCalculateMonthlyStats,
   deleteGame as dbDeleteGame,
   getTodaysGame,
-  getCurrentMonth
+  getCurrentMonth,
+  getPlayerByUserId,
+  linkPlayerToUser,
+  getUserStats,
+  getUserGameHistory
 } from './utils/supabaseStorage';
 import { calculateMonthlyRatings } from './utils/ratingCalculator';
 import './index.css';
 
 
-type View = 'dashboard' | 'players' | 'newGame' | 'leaderboard' | 'history';
+type View = 'dashboard' | 'players' | 'newGame' | 'leaderboard' | 'history' | 'myProfile';
 
 function App() {
   const { user, role, loading: authLoading } = useAuth();
@@ -37,9 +43,13 @@ function App() {
   const [stats, setStats] = useState<MonthlyStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState<View>('dashboard');
+  const [todaysGame, setTodaysGame] = useState<DailyGame | null>(null);
+  const [userPlayer, setUserPlayer] = useState<Player | null>(null);
+  const [userStats, setUserStats] = useState<MonthlyStats | null>(null);
+  const [userGameHistory, setUserGameHistory] = useState<DailyGame[]>([]);
+  const [showPlayerClaim, setShowPlayerClaim] = useState(false);
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const [drawnGroups, setDrawnGroups] = useState<Group[]>([]);
-  const [todaysGame, setTodaysGame] = useState<DailyGame | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>(
     new Date().toISOString().split('T')[0]
   );
@@ -71,6 +81,29 @@ function App() {
         setGames(loadedGames);
         setTodaysGame(loadedTodaysGame);
 
+        // Load user's player association if logged in
+        if (user?.id) {
+          console.log('Loading player for user:', user.id);
+          const player = await getPlayerByUserId(user.id);
+          console.log('User player loaded:', player);
+          setUserPlayer(player);
+
+          if (player) {
+            const [playerStats, playerHistory] = await Promise.all([
+              getUserStats(player.id, currentMonth),
+              getUserGameHistory(player.id, currentMonth)
+            ]);
+            console.log('User stats:', playerStats);
+            console.log('User game history:', playerHistory);
+            setUserStats(playerStats);
+            setUserGameHistory(playerHistory);
+          } else {
+            // Show player claim dialog if user has no player linked
+            console.log('No player linked, showing claim dialog');
+            setShowPlayerClaim(true);
+          }
+        }
+
         // Calculate ratings for stats
         const statsWithRatings = calculateMonthlyRatings(loadedStats);
         setStats(statsWithRatings);
@@ -82,7 +115,7 @@ function App() {
     }
 
     loadData();
-  }, [currentMonth]);
+  }, [currentMonth, user]);
 
   // Recalculate ratings when stats change
   useEffect(() => {
@@ -124,6 +157,22 @@ function App() {
     const success = await dbRemovePlayer(id);
     if (success) {
       setPlayers(prev => prev.filter(p => p.id !== id));
+    }
+  };
+
+  const handlePlayerClaim = async (playerId: string) => {
+    if (user?.id) {
+      // Only admins can link players
+      if (role !== 'admin') {
+        alert('Only admins can link players to users. Please contact an admin to link your player profile.');
+        return;
+      }
+
+      const success = await linkPlayerToUser(playerId, user.id);
+      if (success) {
+        setShowPlayerClaim(false);
+        await reloadData(); // Reload to get player data
+      }
     }
   };
 
@@ -269,7 +318,10 @@ function App() {
                 📜 History
               </button>
             </div>
-            <UserMenu />
+            <UserMenu
+              userPlayer={userPlayer}
+              onNavigateToProfile={() => setCurrentView('myProfile')}
+            />
           </div>
         </div>
       </header>
@@ -335,7 +387,7 @@ function App() {
             />
 
             {stats.length > 0 && (
-              <Leaderboard stats={stats} currentMonth={currentMonth} />
+              <Leaderboard stats={stats} currentMonth={currentMonth} currentPlayerId={userPlayer?.id} />
             )}
           </div>
         )}
@@ -467,7 +519,11 @@ function App() {
 
         {
           currentView === 'leaderboard' && (
-            <Leaderboard stats={stats} currentMonth={currentMonth} />
+            <Leaderboard
+              stats={stats}
+              currentMonth={currentMonth}
+              currentPlayerId={userPlayer?.id}
+            />
           )
         }
 
@@ -481,7 +537,27 @@ function App() {
             />
           )
         }
+
+        {currentView === 'myProfile' && userPlayer && (
+          <MyProfile
+            player={userPlayer}
+            stats={userStats}
+            todaysGame={todaysGame}
+            gameHistory={userGameHistory}
+            currentMonth={currentMonth}
+          />
+        )}
       </div>
+
+      {/* Player Claim Dialog */}
+      {showPlayerClaim && (
+        <PlayerClaimDialog
+          players={players}
+          onClaim={handlePlayerClaim}
+          onClose={() => setShowPlayerClaim(false)}
+          isAdmin={role === 'admin'}
+        />
+      )}
     </div>
   );
 }

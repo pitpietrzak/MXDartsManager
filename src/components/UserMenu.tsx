@@ -1,6 +1,12 @@
 import { useAuth } from '../contexts/AuthContext';
+import { Player } from '../types/types';
 
-export function UserMenu() {
+interface UserMenuProps {
+    userPlayer?: Player | null;
+    onNavigateToProfile?: () => void;
+}
+
+export function UserMenu({ userPlayer, onNavigateToProfile }: UserMenuProps) {
     const { user, role, signOut } = useAuth();
 
     if (!user) return null;
@@ -39,13 +45,23 @@ export function UserMenu() {
                     </div>
                 </div>
             </div>
-            <button
-                onClick={signOut}
-                className="btn btn-secondary btn-sm"
-                style={{ marginLeft: 'var(--spacing-sm)' }}
-            >
-                Sign Out
-            </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xs)' }}>
+                {userPlayer && onNavigateToProfile && (
+                    <button
+                        onClick={onNavigateToProfile}
+                        className="btn btn-secondary btn-sm"
+                        title="View your profile"
+                    >
+                        🏅 My Profile
+                    </button>
+                )}
+                <button
+                    onClick={signOut}
+                    className="btn btn-secondary btn-sm"
+                >
+                    Sign Out
+                </button>
+            </div>
         </div>
     );
 }

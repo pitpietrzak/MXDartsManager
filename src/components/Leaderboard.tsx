@@ -4,9 +4,10 @@ import { MonthlyStats } from '../types/types';
 interface LeaderboardProps {
     stats: MonthlyStats[];
     currentMonth: string;
+    currentPlayerId?: string;
 }
 
-export const Leaderboard: React.FC<LeaderboardProps> = ({ stats, currentMonth }) => {
+export const Leaderboard: React.FC<LeaderboardProps> = ({ stats, currentMonth, currentPlayerId }) => {
     const sortedStats = [...stats].sort((a, b) => b.rating - a.rating);
 
     const formatMonth = (monthStr: string) => {
@@ -93,35 +94,40 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ stats, currentMonth })
                                 </tr>
                             </thead>
                             <tbody>
-                                {sortedStats.map((stat, index) => (
-                                    <tr
-                                        key={stat.playerId}
-                                        style={{
-                                            borderBottom: '1px solid var(--color-border)',
-                                            background: index < 3 ? 'rgba(245, 158, 11, 0.05)' : 'transparent',
-                                            transition: 'background var(--transition-fast)'
-                                        }}
-                                    >
-                                        <td style={{ padding: 'var(--spacing-md)', fontSize: '1rem', fontWeight: 700 }}>
-                                            {getRankEmoji(index + 1)}
-                                        </td>
-                                        <td style={{ padding: 'var(--spacing-md)', fontWeight: 600 }}>
-                                            {stat.playerName}
-                                        </td>
-                                        <td style={{ padding: 'var(--spacing-md)', textAlign: 'center', fontWeight: 700, color: 'var(--color-accent-primary)' }}>
-                                            {stat.rating.toFixed(3)}
-                                        </td>
-                                        <td style={{ padding: 'var(--spacing-md)', textAlign: 'center', fontSize: '0.875rem' }}>
-                                            {stat.totalWins}-{stat.totalLosses}
-                                        </td>
-                                        <td style={{ padding: 'var(--spacing-md)', textAlign: 'center', fontSize: '0.875rem' }}>
-                                            {getWinRate(stat.totalWins, stat.totalLosses)}
-                                        </td>
-                                        <td style={{ padding: 'var(--spacing-md)', textAlign: 'center', fontSize: '0.875rem' }}>
-                                            {stat.gamesPlayed}
-                                        </td>
-                                    </tr>
-                                ))}
+                                {sortedStats.map((stat, index) => {
+                                    const isCurrentPlayer = currentPlayerId && stat.playerId === currentPlayerId;
+                                    return (
+                                        <tr
+                                            key={stat.playerId}
+                                            style={{
+                                                borderBottom: '1px solid var(--color-border)',
+                                                background: isCurrentPlayer
+                                                    ? 'rgba(34, 197, 94, 0.15)'
+                                                    : (index < 3 ? 'rgba(245, 158, 11, 0.05)' : 'transparent'),
+                                                transition: 'background var(--transition-fast)'
+                                            }}
+                                        >
+                                            <td style={{ padding: 'var(--spacing-md)', fontSize: '1rem', fontWeight: 700 }}>
+                                                {getRankEmoji(index + 1)}
+                                            </td>
+                                            <td style={{ padding: 'var(--spacing-md)', fontWeight: 600 }}>
+                                                {stat.playerName}
+                                            </td>
+                                            <td style={{ padding: 'var(--spacing-md)', textAlign: 'center', fontWeight: 700, color: 'var(--color-accent-primary)' }}>
+                                                {stat.rating.toFixed(3)}
+                                            </td>
+                                            <td style={{ padding: 'var(--spacing-md)', textAlign: 'center', fontSize: '0.875rem' }}>
+                                                {stat.totalWins}-{stat.totalLosses}
+                                            </td>
+                                            <td style={{ padding: 'var(--spacing-md)', textAlign: 'center', fontSize: '0.875rem' }}>
+                                                {getWinRate(stat.totalWins, stat.totalLosses)}
+                                            </td>
+                                            <td style={{ padding: 'var(--spacing-md)', textAlign: 'center', fontSize: '0.875rem' }}>
+                                                {stat.gamesPlayed}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>
