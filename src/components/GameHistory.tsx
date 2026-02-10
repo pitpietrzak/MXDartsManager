@@ -98,7 +98,11 @@ export const GameHistory: React.FC<GameHistoryProps> = ({ games, role, onDelete 
                                                     .sort((a, b) => a.position - b.position)
                                                     .map((result) => {
                                                         const player = group.players.find(p => p.id === result.playerId);
-                                                        const emoji = result.position === 1 ? '🥇' : result.position === 2 ? '🥈' : result.position === 3 ? '🥉' : '4️⃣';
+                                                        let emoji = '';
+                                                        if (result.position === 1) emoji = '🥇';
+                                                        else if (result.position === 2) emoji = '🥈';
+                                                        else if (result.position === 3) emoji = '🥉';
+                                                        else emoji = `${result.position}.`;
                                                         return (
                                                             <div key={result.playerId} style={{ padding: 'var(--spacing-xs) 0' }}>
                                                                 {emoji} {player?.name}: <span style={{ color: 'var(--color-text-muted)' }}>{result.wins}-{result.losses}</span>

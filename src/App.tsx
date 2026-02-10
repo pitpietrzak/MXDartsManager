@@ -389,7 +389,7 @@ function App() {
                     onClick={() => {
                       const newGroup: Group = {
                         id: `manual-${Date.now()}`,
-                        players: presentPlayers.slice(0, Math.min(4, presentPlayers.length)),
+                        players: presentPlayers,
                         results: []
                       };
                       setDrawnGroups([...drawnGroups, newGroup]);
