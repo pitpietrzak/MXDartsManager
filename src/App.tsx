@@ -1,0 +1,435 @@
+import { useState, useEffect } from 'react';
+import { Player, Group, DailyGame, MonthlyStats } from './types/types';
+import { PlayerManagement } from './components/PlayerManagement';
+import { AttendanceSelector } from './components/AttendanceSelector';
+import { GroupDrawer } from './components/GroupDrawer';
+import { ResultsEntry } from './components/ResultsEntry';
+import { Leaderboard } from './components/Leaderboard';
+import { GameHistory } from './components/GameHistory';
+import { Login } from './components/Login';
+import { UserMenu } from './components/UserMenu';
+import { RoleManager } from './components/RoleManager';
+import { useAuth } from './contexts/AuthContext';
+import {
+  loadPlayers,
+  addPlayer as dbAddPlayer,
+  removePlayer as dbRemovePlayer,
+  loadMonthGames,
+  saveGame as dbSaveGame,
+  calculateMonthlyStats as dbCalculateMonthlyStats,
+  deleteGame as dbDeleteGame,
+  getCurrentMonth
+} from './utils/supabaseStorage';
+import { calculateMonthlyRatings } from './utils/ratingCalculator';
+import './index.css';
+
+
+type View = 'dashboard' | 'players' | 'newGame' | 'leaderboard' | 'history';
+
+function App() {
+  const { user, role, loading: authLoading } = useAuth();
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [games, setGames] = useState<DailyGame[]>([]);
+  const [stats, setStats] = useState<MonthlyStats[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentView, setCurrentView] = useState<View>('dashboard');
+  const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
+  const [drawnGroups, setDrawnGroups] = useState<Group[]>([]);
+  const [selectedDate, setSelectedDate] = useState<string>(
+    new Date().toISOString().split('T')[0]
+  );
+  const [manualEntry, setManualEntry] = useState(false);
+
+  const currentMonth = getCurrentMonth();
+
+  // Load initial data from Supabase
+  useEffect(() => {
+    async function loadData() {
+      setLoading(true);
+      try {
+        const [loadedPlayers, loadedGames, loadedStats] = await Promise.all([
+          loadPlayers(),
+          loadMonthGames(currentMonth),
+          dbCalculateMonthlyStats(currentMonth)
+        ]);
+
+        setPlayers(loadedPlayers);
+        setGames(loadedGames);
+
+        // Calculate ratings for stats
+        const statsWithRatings = calculateMonthlyRatings(loadedStats, currentMonth);
+        setStats(statsWithRatings);
+      } catch (error) {
+        console.error('Error loading data:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadData();
+  }, [currentMonth]);
+
+  // Recalculate ratings when stats change
+  useEffect(() => {
+    if (stats.length > 0) {
+      const updatedStats = calculateMonthlyRatings(stats, currentMonth);
+      if (JSON.stringify(updatedStats) !== JSON.stringify(stats)) {
+        setStats(updatedStats);
+      }
+    }
+  }, [games]);
+
+  // Reload data helper
+  const reloadData = async () => {
+    try {
+      const [loadedPlayers, loadedGames, loadedStats] = await Promise.all([
+        loadPlayers(),
+        loadMonthGames(currentMonth),
+        dbCalculateMonthlyStats(currentMonth)
+      ]);
+
+      setPlayers(loadedPlayers);
+      setGames(loadedGames);
+
+      const statsWithRatings = calculateMonthlyRatings(loadedStats, currentMonth);
+      setStats(statsWithRatings);
+    } catch (error) {
+      console.error('Error reloading data:', error);
+    }
+  };
+
+  const handleAddPlayer = async (name: string) => {
+    const newPlayer = await dbAddPlayer(name);
+    if (newPlayer) {
+      setPlayers(prev => [...prev, newPlayer]);
+    }
+  };
+
+  const handleRemovePlayer = async (id: string) => {
+    const success = await dbRemovePlayer(id);
+    if (success) {
+      setPlayers(prev => prev.filter(p => p.id !== id));
+    }
+  };
+
+  // Get players who have already played on the selected date
+  const getPlayersWhoPlayedToday = (): Set<string> => {
+    const playersOnDate = new Set<string>();
+
+    games.forEach(game => {
+      if (game.date === selectedDate) {
+        game.groups.forEach(group => {
+          group.results?.forEach(result => {
+            playersOnDate.add(result.playerId);
+          });
+        });
+      }
+    });
+
+    return playersOnDate;
+  };
+
+  const handleGroupsGenerated = (groups: Group[]) => {
+    setDrawnGroups(groups);
+  };
+
+  const handleResultsSubmit = async (groupsWithResults: Group[]) => {
+    const gameMonth = selectedDate.substring(0, 7); // Extract YYYY-MM from selected date
+    const gameId = await dbSaveGame(selectedDate, gameMonth, groupsWithResults);
+
+    if (gameId) {
+      // Reload all data to get updated stats
+      await reloadData();
+
+      // Reset for next game
+      setSelectedPlayerIds([]);
+      setDrawnGroups([]);
+      setSelectedDate(new Date().toISOString().split('T')[0]); // Reset to today
+      setCurrentView('leaderboard');
+    } else {
+      console.error('Failed to save game');
+    }
+  };
+
+  const handleDeleteGame = async (gameId: string) => {
+    const success = await dbDeleteGame(gameId);
+    if (success) {
+      await reloadData();
+    } else {
+      console.error('Failed to delete game');
+      alert('Failed to delete game. Please try again.');
+    }
+  };
+
+  const presentPlayers = players.filter(p => selectedPlayerIds.includes(p.id));
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div style={{ minHeight: '100vh', background: 'var(--color-bg-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center' }}>
+          <h2>Loading...</h2>
+          <p className="text-muted">Initializing...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login if not authenticated
+  if (!user) {
+    return <Login />;
+  }
+
+  // Show loading while fetching data
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh', background: 'var(--color-bg-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center' }}>
+          <h2>Loading...</h2>
+          <p className="text-muted">Connecting to database</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Check role permissions for current view
+  const canAccessView = (view: View): boolean => {
+    if (!role) return false;
+
+    switch (view) {
+      case 'players':
+        return role === 'admin';
+      case 'newGame':
+        return role === 'admin' || role === 'game_manager';
+      case 'dashboard':
+      case 'leaderboard':
+      case 'history':
+        return true; // All authenticated users
+      default:
+        return false;
+    }
+  };
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'var(--color-bg-primary)' }}>
+      {/* Header */}
+      <header style={{
+        background: 'var(--color-bg-secondary)',
+        borderBottom: '2px solid var(--color-border)',
+        padding: 'var(--spacing-lg) 0',
+        marginBottom: 'var(--spacing-xl)',
+        boxShadow: 'var(--shadow-lg)'
+      }}>
+        <div className="container">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--spacing-md)' }}>
+            <div className="flex items-center gap-md" style={{ flexWrap: 'wrap' }}>
+              <button onClick={() => setCurrentView('dashboard')} className={currentView === 'dashboard' ? 'btn btn-primary' : 'btn btn-secondary'}>
+                📊 Dashboard
+              </button>
+              {canAccessView('players') && (
+                <button onClick={() => setCurrentView('players')} className={currentView === 'players' ? 'btn btn-primary' : 'btn btn-secondary'}>
+                  👥 Players
+                </button>
+              )}
+              {canAccessView('newGame') && (
+                <button onClick={() => setCurrentView('newGame')} className={currentView === 'newGame' ? 'btn btn-primary' : 'btn btn-secondary'}>
+                  🎮 New Game
+                </button>
+              )}
+              <button onClick={() => setCurrentView('leaderboard')} className={currentView === 'leaderboard' ? 'btn btn-primary' : 'btn btn-secondary'}>
+                🏆 Leaderboard
+              </button>
+              <button onClick={() => setCurrentView('history')} className={currentView === 'history' ? 'btn btn-primary' : 'btn btn-secondary'}>
+                📜 History
+              </button>
+            </div>
+            <UserMenu />
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <div className="container" style={{ paddingBottom: 'var(--spacing-2xl)' }}>
+        {currentView === 'dashboard' && (
+          <div style={{ display: 'grid', gap: 'var(--spacing-lg)' }}>
+            <div className="card fade-in">
+              <h2 style={{ marginBottom: 'var(--spacing-md)' }}>Welcome to MX Dart League! 🎯</h2>
+              <p className="text-muted" style={{ marginBottom: 'var(--spacing-lg)' }}>
+                Manage your daily dart competitions, track player statistics, and crown the Darter of the Month!
+              </p>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--spacing-md)' }}>
+                <div style={{ padding: 'var(--spacing-lg)', background: 'var(--color-bg-secondary)', borderRadius: 'var(--radius-lg)', textAlign: 'center' }}>
+                  <div style={{ fontSize: '2rem', marginBottom: 'var(--spacing-sm)' }}>👥</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-accent-primary)' }}>{players.length}</div>
+                  <div className="text-muted" style={{ fontSize: '0.875rem' }}>Total Players</div>
+                </div>
+
+                <div style={{ padding: 'var(--spacing-lg)', background: 'var(--color-bg-secondary)', borderRadius: 'var(--radius-lg)', textAlign: 'center' }}>
+                  <div style={{ fontSize: '2rem', marginBottom: 'var(--spacing-sm)' }}>🎯</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-accent-primary)' }}>{games.length}</div>
+                  <div className="text-muted" style={{ fontSize: '0.875rem' }}>Games This Month</div>
+                </div>
+
+                <div style={{ padding: 'var(--spacing-lg)', background: 'var(--color-bg-secondary)', borderRadius: 'var(--radius-lg)', textAlign: 'center' }}>
+                  <div style={{ fontSize: '2rem', marginBottom: 'var(--spacing-sm)' }}>👑</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-accent-primary)' }}>
+                    {stats.length > 0
+                      ? [...stats].sort((a, b) => b.rating - a.rating)[0]?.playerName || '-'
+                      : '-'}
+                  </div>
+                  <div className="text-muted" style={{ fontSize: '0.875rem' }}>Current Leader</div>
+                </div>
+              </div>
+
+              {canAccessView('newGame') && (
+                <div className="mt-lg">
+                  <button onClick={() => setCurrentView('newGame')} className="btn btn-primary btn-lg" style={{ width: '100%' }}>
+                    🎯 Start New Game
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {stats.length > 0 && (
+              <Leaderboard stats={stats} currentMonth={currentMonth} />
+            )}
+          </div>
+        )}
+
+        {
+          currentView === 'players' && canAccessView('players') && (
+            <div style={{ display: 'grid', gap: 'var(--spacing-lg)' }}>
+              <PlayerManagement
+                players={players}
+                onAddPlayer={handleAddPlayer}
+                onRemovePlayer={handleRemovePlayer}
+              />
+              <RoleManager />
+            </div>
+          )
+        }
+
+        {
+          currentView === 'newGame' && canAccessView('newGame') && (
+            <div style={{ display: 'grid', gap: 'var(--spacing-lg)' }}>
+              {role === 'admin' && (
+                <div className="card">
+                  <h3 style={{ marginBottom: 'var(--spacing-md)' }}>Game Date</h3>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)' }}>
+                    <input
+                      type="date"
+                      value={selectedDate}
+                      onChange={(e) => setSelectedDate(e.target.value)}
+                      max={new Date().toISOString().split('T')[0]}
+                      style={{
+                        padding: 'var(--spacing-sm) var(--spacing-md)',
+                        borderRadius: 'var(--radius-md)',
+                        border: '1px solid var(--color-border)',
+                        background: 'var(--color-bg-secondary)',
+                        color: 'var(--color-text-primary)',
+                        fontSize: '1rem',
+                        flex: 1
+                      }}
+                    />
+                    {selectedDate !== new Date().toISOString().split('T')[0] && (
+                      <div style={{
+                        padding: 'var(--spacing-xs) var(--spacing-sm)',
+                        background: 'var(--color-accent-primary)',
+                        color: 'white',
+                        borderRadius: 'var(--radius-md)',
+                        fontSize: '0.875rem',
+                        fontWeight: 600
+                      }}>
+                        Historical Game
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-muted" style={{ fontSize: '0.875rem', marginTop: 'var(--spacing-sm)' }}>
+                    Select a past date to add a game that was forgotten
+                  </p>
+
+                  <div style={{ marginTop: 'var(--spacing-md)', display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
+                    <input
+                      type="checkbox"
+                      id="manualEntry"
+                      checked={manualEntry}
+                      onChange={(e) => setManualEntry(e.target.checked)}
+                      style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                    />
+                    <label htmlFor="manualEntry" style={{ cursor: 'pointer', fontSize: '0.9rem' }}>
+                      Manual entry (skip group drawing)
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              <AttendanceSelector
+                players={players}
+                selectedPlayerIds={selectedPlayerIds}
+                onSelectionChange={setSelectedPlayerIds}
+                playersWhoPlayedToday={getPlayersWhoPlayedToday()}
+              />
+
+              {selectedPlayerIds.length >= 2 && !manualEntry && (
+                <GroupDrawer
+                  presentPlayers={presentPlayers}
+                  groups={drawnGroups}
+                  onGroupsGenerated={handleGroupsGenerated}
+                />
+              )}
+
+              {manualEntry && selectedPlayerIds.length >= 2 && (
+                <div className="card">
+                  <h3 style={{ marginBottom: 'var(--spacing-md)' }}>Manual Results Entry</h3>
+                  <p className="text-muted" style={{ marginBottom: 'var(--spacing-md)' }}>
+                    Enter results manually without drawing groups. Click "Create Group" to add groups.
+                  </p>
+                  <button
+                    onClick={() => {
+                      const newGroup: Group = {
+                        id: `manual-${Date.now()}`,
+                        players: presentPlayers.slice(0, Math.min(4, presentPlayers.length)),
+                        results: []
+                      };
+                      setDrawnGroups([...drawnGroups, newGroup]);
+                    }}
+                    className="btn btn-primary"
+                  >
+                    ➕ Create Group
+                  </button>
+                </div>
+              )}
+
+              {drawnGroups.length > 0 && (
+                <ResultsEntry
+                  groups={drawnGroups}
+                  onResultsSubmit={handleResultsSubmit}
+                />
+              )}
+            </div>
+          )
+        }
+
+        {
+          currentView === 'leaderboard' && (
+            <Leaderboard stats={stats} currentMonth={currentMonth} />
+          )
+        }
+
+        {
+          currentView === 'history' && (
+            <GameHistory
+              games={games}
+              currentMonth={currentMonth}
+              role={role}
+              onDelete={handleDeleteGame}
+            />
+          )
+        }
+      </div>
+    </div>
+  );
+}
+
+export default App;
