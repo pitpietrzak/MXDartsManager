@@ -52,6 +52,7 @@ export const GameHistory: React.FC<GameHistoryProps> = ({ games, role, onDelete 
                     {sortedDates.map((date) => {
                         const gamesOnDate = gamesByDate[date];
                         const totalGroups = gamesOnDate.reduce((sum, game) => sum + game.groups.length, 0);
+                        const isToday = date === new Date().toISOString().split('T')[0];
 
                         return (
                             <div
@@ -60,83 +61,101 @@ export const GameHistory: React.FC<GameHistoryProps> = ({ games, role, onDelete 
                                     padding: 'var(--spacing-md)',
                                     background: 'var(--color-bg-secondary)',
                                     borderRadius: 'var(--radius-lg)',
-                                    border: '1px solid var(--color-border-light)'
+                                    border: isToday ? '2px solid var(--color-accent-primary)' : '1px solid var(--color-border-light)'
                                 }}
                             >
                                 <div className="flex items-center justify-between mb-md">
                                     <div>
-                                        <div style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: 'var(--spacing-xs)' }}>
+                                        <div style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: 'var(--spacing-xs)', display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
                                             {formatDate(date)}
+                                            {isToday && (
+                                                <span style={{
+                                                    fontSize: '0.75rem',
+                                                    padding: '2px 8px',
+                                                    background: 'var(--color-accent-primary)',
+                                                    color: 'white',
+                                                    borderRadius: 'var(--radius-sm)',
+                                                    fontWeight: 600
+                                                }}>
+                                                    ✨ Today
+                                                </span>
+                                            )}
                                         </div>
                                         <div className="text-muted" style={{ fontSize: '0.875rem' }}>
                                             {totalGroups} {totalGroups === 1 ? 'group' : 'groups'}
                                         </div>
                                     </div>
-                                    <div style={{ display: 'flex', gap: 'var(--spacing-sm)' }}>
-                                        {role === 'admin' && onDelete && gamesOnDate.map((game) => (
-                                            <button
-                                                key={game.id}
-                                                onClick={async () => {
-                                                    if (window.confirm('Are you sure you want to delete this game? This action cannot be undone.')) {
-                                                        setDeletingId(game.id);
-                                                        await onDelete(game.id);
-                                                        setDeletingId(null);
-                                                    }
-                                                }}
-                                                disabled={deletingId === game.id}
-                                                className="btn btn-secondary"
-                                                style={{
-                                                    padding: 'var(--spacing-xs) var(--spacing-sm)',
-                                                    fontSize: '0.875rem',
-                                                    minWidth: 'auto'
-                                                }}
-                                                title="Delete game"
-                                            >
-                                                {deletingId === game.id ? '⏳' : '🗑️'}
-                                            </button>
-                                        ))}
-                                    </div>
                                 </div>
 
-                                <div style={{ display: 'grid', gap: 'var(--spacing-sm)' }}>
-                                    {gamesOnDate.flatMap((game, gameIdx) =>
-                                        game.groups.map((group, groupIndex) => {
-                                            const globalGroupIndex = gamesOnDate.slice(0, gameIdx).reduce((sum, g) => sum + g.groups.length, 0) + groupIndex + 1;
-                                            return (
-                                                <div
-                                                    key={`${game.id}-${group.id}`}
-                                                    style={{
-                                                        padding: 'var(--spacing-sm)',
-                                                        background: 'var(--color-bg-tertiary)',
-                                                        borderRadius: 'var(--radius-md)'
-                                                    }}
-                                                >
-                                                    <div style={{ fontWeight: 600, marginBottom: 'var(--spacing-xs)', fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
-                                                        Group {globalGroupIndex}
+                                <div style={{ display: 'grid', gap: 'var(--spacing-md)' }}>
+                                    {gamesOnDate.map((game, gameIdx) => {
+                                        const gameStartGroupIndex = gamesOnDate.slice(0, gameIdx).reduce((sum, g) => sum + g.groups.length, 0);
+
+                                        return (
+                                            <div key={game.id} style={{ display: 'grid', gap: 'var(--spacing-sm)' }}>
+                                                {role === 'admin' && onDelete && (
+                                                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 'var(--spacing-xs)' }}>
+                                                        <button
+                                                            onClick={async () => {
+                                                                if (window.confirm('Are you sure you want to delete this game? This action cannot be undone.')) {
+                                                                    setDeletingId(game.id);
+                                                                    await onDelete(game.id);
+                                                                    setDeletingId(null);
+                                                                }
+                                                            }}
+                                                            disabled={deletingId === game.id}
+                                                            className="btn btn-secondary"
+                                                            style={{
+                                                                padding: 'var(--spacing-xs) var(--spacing-sm)',
+                                                                fontSize: '0.875rem',
+                                                                minWidth: 'auto'
+                                                            }}
+                                                            title={`Delete game (${game.groups.length} ${game.groups.length === 1 ? 'group' : 'groups'})`}
+                                                        >
+                                                            {deletingId === game.id ? '⏳' : '🗑️'}
+                                                        </button>
                                                     </div>
-                                                    {group.results && (
-                                                        <div style={{ fontSize: '0.875rem' }}>
-                                                            {[...group.results]
-                                                                .sort((a, b) => a.position - b.position)
-                                                                .map((result) => {
-                                                                    const player = group.players.find(p => p.id === result.playerId);
-                                                                    let emoji = '';
-                                                                    if (result.position === 1) emoji = '🥇';
-                                                                    else if (result.position === 2) emoji = '🥈';
-                                                                    else if (result.position === 3) emoji = '🥉';
-                                                                    else emoji = `${result.position}.`;
-                                                                    return (
-                                                                        <div key={result.playerId} style={{ padding: 'var(--spacing-xs) 0' }}>
-                                                                            {emoji} {player?.name}: <span style={{ color: 'var(--color-text-muted)' }}>{result.wins}-{result.losses}</span>
-                                                                        </div>
-                                                                    );
-                                                                })}
+                                                )}
+
+                                                {game.groups.map((group, groupIndex) => {
+                                                    const globalGroupIndex = gameStartGroupIndex + groupIndex + 1;
+                                                    return (
+                                                        <div
+                                                            key={`${game.id}-${group.id}`}
+                                                            style={{
+                                                                padding: 'var(--spacing-sm)',
+                                                                background: 'var(--color-bg-tertiary)',
+                                                                borderRadius: 'var(--radius-md)'
+                                                            }}
+                                                        >
+                                                            <div style={{ fontWeight: 600, marginBottom: 'var(--spacing-xs)', fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
+                                                                Group {globalGroupIndex}
+                                                            </div>
+                                                            {group.results && (
+                                                                <div style={{ fontSize: '0.875rem' }}>
+                                                                    {[...group.results]
+                                                                        .sort((a, b) => a.position - b.position)
+                                                                        .map((result) => {
+                                                                            const player = group.players.find(p => p.id === result.playerId);
+                                                                            let emoji = '';
+                                                                            if (result.position === 1) emoji = '🥇';
+                                                                            else if (result.position === 2) emoji = '🥈';
+                                                                            else if (result.position === 3) emoji = '🥉';
+                                                                            else emoji = `${result.position}.`;
+                                                                            return (
+                                                                                <div key={result.playerId} style={{ padding: 'var(--spacing-xs) 0' }}>
+                                                                                    {emoji} {player?.name}: <span style={{ color: 'var(--color-text-muted)' }}>{result.wins}-{result.losses}</span>
+                                                                                </div>
+                                                                            );
+                                                                        })}
+                                                                </div>
+                                                            )}
                                                         </div>
-                                                    )}
-                                                </div>
-                                            );
-                                        })
-                                    )}
+                                                    );
+                                                })}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         );
