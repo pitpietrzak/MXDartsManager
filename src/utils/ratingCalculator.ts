@@ -27,8 +27,8 @@ export function calculateRating(
     // Win rate component: W / (W + L)
     const winRate = totalWins / (totalWins + totalLosses);
 
-    // Attendance bonus: AD = 1 + (X / Xmax) × (Xavg / Xmax)
-    const attendanceBonus = 1 + (daysPlayed / maxDaysInMonth) * (avgDaysPlayed / maxDaysInMonth);
+    // Attendance bonus: AD = 1 + (X / Xmax) - (Xavg / Xmax)
+    const attendanceBonus = 1 + (daysPlayed / maxDaysInMonth) - (avgDaysPlayed / maxDaysInMonth);
 
     // Final rating: RATING = W / (W + L) × AD
     const rating = winRate * attendanceBonus;

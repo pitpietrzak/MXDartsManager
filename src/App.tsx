@@ -77,7 +77,7 @@ function App() {
         setStats(updatedStats);
       }
     }
-  }, [games]);
+  }, [games, stats]);
 
   // Reload data helper
   const reloadData = async () => {
