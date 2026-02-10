@@ -9,7 +9,7 @@ import { MonthlyStats } from '../types/types';
  * L = number of losses
  * AD = attendance bonus = 1 + (X / Xmax) × (Xavg / Xmax)
  * X = number of days played
- * Xmax = number of days in the month
+ * Xmax = maximum days played by any player this month
  * Xavg = average number of days played by players
  */
 export function calculateRating(
@@ -42,14 +42,12 @@ export function calculateRating(
  * @param currentMonth - Current month string in format "YYYY-MM"
  */
 export function calculateMonthlyRatings(
-    stats: MonthlyStats[],
-    currentMonth: string
+    stats: MonthlyStats[]
 ): MonthlyStats[] {
     if (stats.length === 0) return [];
 
-    // Calculate Xmax: number of days in the current month
-    const [year, month] = currentMonth.split('-').map(Number);
-    const daysInMonth = new Date(year, month, 0).getDate();
+    // Calculate Xmax: maximum days played by any player this month
+    const maxDaysPlayed = Math.max(...stats.map(s => s.daysPlayed), 1); // At least 1 to avoid division by zero
 
     // Calculate average days played (Xavg)
     const totalDaysPlayed = stats.reduce((sum, s) => sum + s.daysPlayed, 0);
@@ -62,7 +60,7 @@ export function calculateMonthlyRatings(
             stat.totalWins,
             stat.totalLosses,
             stat.daysPlayed,
-            daysInMonth,
+            maxDaysPlayed,
             avgDaysPlayed
         )
     }));

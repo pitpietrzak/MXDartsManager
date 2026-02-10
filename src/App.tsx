@@ -57,7 +57,7 @@ function App() {
         setGames(loadedGames);
 
         // Calculate ratings for stats
-        const statsWithRatings = calculateMonthlyRatings(loadedStats, currentMonth);
+        const statsWithRatings = calculateMonthlyRatings(loadedStats);
         setStats(statsWithRatings);
       } catch (error) {
         console.error('Error loading data:', error);
@@ -72,7 +72,7 @@ function App() {
   // Recalculate ratings when stats change
   useEffect(() => {
     if (stats.length > 0) {
-      const updatedStats = calculateMonthlyRatings(stats, currentMonth);
+      const updatedStats = calculateMonthlyRatings(stats);
       if (JSON.stringify(updatedStats) !== JSON.stringify(stats)) {
         setStats(updatedStats);
       }
@@ -91,7 +91,7 @@ function App() {
       setPlayers(loadedPlayers);
       setGames(loadedGames);
 
-      const statsWithRatings = calculateMonthlyRatings(loadedStats, currentMonth);
+      const statsWithRatings = calculateMonthlyRatings(loadedStats);
       setStats(statsWithRatings);
     } catch (error) {
       console.error('Error reloading data:', error);
