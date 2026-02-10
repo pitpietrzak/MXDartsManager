@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { DailyGame } from '../types/types';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface GameHistoryProps {
     games: DailyGame[];
@@ -9,10 +10,11 @@ interface GameHistoryProps {
 }
 
 export const GameHistory: React.FC<GameHistoryProps> = ({ games, role, onDelete }) => {
+    const { t, language } = useLanguage();
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const formatDate = (dateStr: string) => {
         const date = new Date(dateStr);
-        return date.toLocaleDateString('en-US', {
+        return date.toLocaleDateString(language === 'pl' ? 'pl-PL' : 'en-US', {
             weekday: 'short',
             month: 'short',
             day: 'numeric',
@@ -37,15 +39,15 @@ export const GameHistory: React.FC<GameHistoryProps> = ({ games, role, onDelete 
     return (
         <div className="card fade-in">
             <div className="card-header">
-                <h3 className="card-title">📅 Game History</h3>
+                <h3 className="card-title">{t('history.title')}</h3>
                 <p className="text-muted" style={{ margin: 0, fontSize: '0.875rem' }}>
-                    All completed games this month
+                    {t('history.description')}
                 </p>
             </div>
 
             {completedGames.length === 0 ? (
                 <p className="text-muted text-center" style={{ padding: 'var(--spacing-xl)' }}>
-                    No games completed yet this month
+                    {t('history.noGames')}
                 </p>
             ) : (
                 <div style={{ display: 'grid', gap: 'var(--spacing-md)' }}>
@@ -77,12 +79,12 @@ export const GameHistory: React.FC<GameHistoryProps> = ({ games, role, onDelete 
                                                     borderRadius: 'var(--radius-sm)',
                                                     fontWeight: 600
                                                 }}>
-                                                    ✨ Today
+                                                    {t('common.today')}
                                                 </span>
                                             )}
                                         </div>
                                         <div className="text-muted" style={{ fontSize: '0.875rem' }}>
-                                            {totalGroups} {totalGroups === 1 ? 'group' : 'groups'}
+                                            {totalGroups} {totalGroups === 1 ? t('common.group') : t('common.groups')}
                                         </div>
                                     </div>
                                 </div>
@@ -97,7 +99,7 @@ export const GameHistory: React.FC<GameHistoryProps> = ({ games, role, onDelete 
                                                     <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 'var(--spacing-xs)' }}>
                                                         <button
                                                             onClick={async () => {
-                                                                if (window.confirm('Are you sure you want to delete this game? This action cannot be undone.')) {
+                                                                if (window.confirm(t('history.deleteConfirmation'))) {
                                                                     setDeletingId(game.id);
                                                                     await onDelete(game.id);
                                                                     setDeletingId(null);
@@ -110,7 +112,7 @@ export const GameHistory: React.FC<GameHistoryProps> = ({ games, role, onDelete 
                                                                 fontSize: '0.875rem',
                                                                 minWidth: 'auto'
                                                             }}
-                                                            title={`Delete game (${game.groups.length} ${game.groups.length === 1 ? 'group' : 'groups'})`}
+                                                            title={`${t('common.deleteHint')}`}
                                                         >
                                                             {deletingId === game.id ? '⏳' : '🗑️'}
                                                         </button>
@@ -129,7 +131,7 @@ export const GameHistory: React.FC<GameHistoryProps> = ({ games, role, onDelete 
                                                             }}
                                                         >
                                                             <div style={{ fontWeight: 600, marginBottom: 'var(--spacing-xs)', fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
-                                                                Group {globalGroupIndex}
+                                                                {t('common.group')} {globalGroupIndex}
                                                             </div>
                                                             {group.results && (
                                                                 <div style={{ fontSize: '0.875rem' }}>

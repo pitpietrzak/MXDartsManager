@@ -1,5 +1,6 @@
 import React from 'react';
 import { MonthlyStats } from '../types/types';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface LeaderboardProps {
     stats: MonthlyStats[];
@@ -8,12 +9,14 @@ interface LeaderboardProps {
 }
 
 export const Leaderboard: React.FC<LeaderboardProps> = ({ stats, currentMonth, currentPlayerId }) => {
+    const { t, language } = useLanguage();
     const sortedStats = [...stats].sort((a, b) => b.rating - a.rating);
+    const isCurrentMonth = currentMonth === new Date().toISOString().slice(0, 7);
 
     const formatMonth = (monthStr: string) => {
         const [year, month] = monthStr.split('-');
         const date = new Date(parseInt(year), parseInt(month) - 1);
-        return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        return date.toLocaleDateString(language === 'pl' ? 'pl-PL' : 'en-US', { month: 'long', year: 'numeric' });
     };
 
     const getRankEmoji = (rank: number) => {
@@ -32,9 +35,9 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ stats, currentMonth, c
     return (
         <div className="card fade-in">
             <div className="card-header">
-                <h3 className="card-title">🎯 Leaderboard</h3>
+                <h3 className="card-title">{t('leaderboard.title')}</h3>
                 <p className="text-muted" style={{ margin: 0, fontSize: '0.875rem' }}>
-                    {formatMonth(currentMonth)} Rankings
+                    {t('leaderboard.description')} ({formatMonth(currentMonth)})
                 </p>
             </div>
 
@@ -57,13 +60,13 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ stats, currentMonth, c
                         >
                             <div style={{ fontSize: '3rem', marginBottom: 'var(--spacing-sm)' }}>👑</div>
                             <div style={{ fontSize: '0.875rem', fontWeight: 600, opacity: 0.9, marginBottom: 'var(--spacing-xs)' }}>
-                                DARTER OF THE MONTH
+                                {t(isCurrentMonth ? 'leaderboard.currentLeader' : 'leaderboard.darterOfMonth')}
                             </div>
                             <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>
                                 {sortedStats[0].playerName}
                             </div>
                             <div style={{ fontSize: '1rem', fontWeight: 600, opacity: 0.9, marginTop: 'var(--spacing-xs)' }}>
-                                Rating: {sortedStats[0].rating.toFixed(3)}
+                                {t('leaderboard.rating')}: {sortedStats[0].rating.toFixed(3)}
                             </div>
                         </div>
                     )}
@@ -74,22 +77,22 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ stats, currentMonth, c
                             <thead>
                                 <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
                                     <th style={{ padding: 'var(--spacing-sm)', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
-                                        RANK
+                                        {t('leaderboard.rank').toUpperCase()}
                                     </th>
                                     <th style={{ padding: 'var(--spacing-sm)', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
-                                        PLAYER
+                                        {t('leaderboard.player').toUpperCase()}
                                     </th>
                                     <th style={{ padding: 'var(--spacing-sm)', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
-                                        RATING
+                                        {t('leaderboard.rating').toUpperCase()}
                                     </th>
                                     <th style={{ padding: 'var(--spacing-sm)', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
-                                        W-L
+                                        {t('leaderboard.winLoss').toUpperCase()}
                                     </th>
                                     <th style={{ padding: 'var(--spacing-sm)', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
                                         WIN%
                                     </th>
                                     <th style={{ padding: 'var(--spacing-sm)', textAlign: 'center', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
-                                        GAMES
+                                        {t('leaderboard.matches').toUpperCase()}
                                     </th>
                                 </tr>
                             </thead>

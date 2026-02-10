@@ -1,34 +1,40 @@
 import React from 'react';
 import { DailyGame, Group } from '../types/types';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface TodaysGamesProps {
-    game: DailyGame | null;
+    games: DailyGame[];
     currentUserId: string | null;
     role: 'admin' | 'game_manager' | 'user' | null;
     onNavigateToResults?: () => void;
 }
 
 export const TodaysGames: React.FC<TodaysGamesProps> = ({
-    game,
+    games,
     currentUserId,
     role,
     onNavigateToResults
 }) => {
-    if (!game || game.groups.length === 0) {
+    const { t } = useLanguage();
+
+    if (games.length === 0) {
         return (
             <div className="card fade-in">
                 <div className="card-header">
-                    <h3 className="card-title">🎯 Today's Games</h3>
+                    <h3 className="card-title">{t('game.todaysGames')}</h3>
                 </div>
                 <p className="text-muted text-center" style={{ padding: 'var(--spacing-xl)' }}>
-                    No games scheduled for today
+                    {t('game.noGamesScheduled')}
                 </p>
             </div>
         );
     }
 
+    // Flatten all groups from all games
+    const allGroups = games.flatMap(game => game.groups);
+
     // Find which group the current user is in
-    const userGroupIndex = game.groups.findIndex(group =>
+    const userGroupIndex = allGroups.findIndex(group =>
         group.players.some(player => player.id === currentUserId)
     );
 
@@ -40,9 +46,9 @@ export const TodaysGames: React.FC<TodaysGamesProps> = ({
             <div className="card-header">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--spacing-md)' }}>
                     <div>
-                        <h3 className="card-title">🎯 Today's Games</h3>
+                        <h3 className="card-title">{t('game.todaysGames')}</h3>
                         <p className="text-muted" style={{ margin: 0, fontSize: '0.875rem' }}>
-                            {game.groups.length} {game.groups.length === 1 ? 'group' : 'groups'} scheduled
+                            {games.length} {games.length === 1 ? t('common.game') : t('common.games')} {t('game.scheduled')} ({allGroups.length} {t('common.groups')} total)
                         </p>
                     </div>
                     {(role === 'admin' || role === 'game_manager') && onNavigateToResults && (
@@ -51,7 +57,7 @@ export const TodaysGames: React.FC<TodaysGamesProps> = ({
                             className="btn btn-primary"
                             style={{ fontSize: '0.875rem' }}
                         >
-                            📝 Submit Results
+                            {t('game.submitResults')}
                         </button>
                     )}
                 </div>
@@ -63,7 +69,7 @@ export const TodaysGames: React.FC<TodaysGamesProps> = ({
                 gap: 'var(--spacing-md)',
                 padding: 'var(--spacing-md)'
             }}>
-                {game.groups.map((group: Group, index: number) => {
+                {allGroups.map((group: Group, index: number) => {
                     const isUserGroup = index === userGroupIndex;
 
                     return (
@@ -89,7 +95,7 @@ export const TodaysGames: React.FC<TodaysGamesProps> = ({
                                     fontWeight: 600,
                                     color: isUserGroup ? 'white' : 'var(--color-text-primary)'
                                 }}>
-                                    Group {index + 1}
+                                    {t('game.group')} {index + 1}
                                 </h4>
                                 {isUserGroup && (
                                     <span style={{
@@ -100,7 +106,7 @@ export const TodaysGames: React.FC<TodaysGamesProps> = ({
                                         borderRadius: 'var(--radius-sm)',
                                         fontWeight: 600
                                     }}>
-                                        ⭐ Your Group
+                                        {t('game.yourGroup')}
                                     </span>
                                 )}
                             </div>
@@ -121,7 +127,7 @@ export const TodaysGames: React.FC<TodaysGamesProps> = ({
                                             }}
                                         >
                                             {isCurrentUser ? '👤 ' : '• '}{player.name}
-                                            {isCurrentUser && ' (You)'}
+                                            {isCurrentUser && ` ${t('game.you')}`}
                                         </div>
                                     );
                                 })}

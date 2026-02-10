@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Player } from '../types/types';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface AttendanceSelectorProps {
     players: Player[];
@@ -14,6 +15,7 @@ export const AttendanceSelector: React.FC<AttendanceSelectorProps> = ({
     onSelectionChange,
     playersWhoPlayedToday
 }) => {
+    const { t } = useLanguage();
     const [localSelection, setLocalSelection] = useState<Set<string>>(new Set(selectedPlayerIds));
 
     useEffect(() => {
@@ -58,18 +60,18 @@ export const AttendanceSelector: React.FC<AttendanceSelectorProps> = ({
                 <div className="flex items-center justify-between">
                     <div>
                         <h3 className="card-title" style={{ marginBottom: 'var(--spacing-xs)' }}>
-                            Who's Playing Today?
+                            {t('attendance.title')}
                         </h3>
                         <p className="text-muted" style={{ margin: 0, fontSize: '0.875rem' }}>
-                            Select players present for today's game
+                            {t('attendance.description')}
                         </p>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xs)', alignItems: 'flex-end' }}>
                         <div className="badge badge-primary" style={{ fontSize: '1rem', padding: 'var(--spacing-sm) var(--spacing-md)' }}>
-                            {localSelection.size} selected
+                            {localSelection.size} {t('attendance.selected')}
                         </div>
                         <div className="text-muted" style={{ fontSize: '0.75rem' }}>
-                            {availablePlayers.length} / {players.length} available
+                            {availablePlayers.length} / {players.length} {t('attendance.available')}
                         </div>
                     </div>
                 </div>
@@ -77,16 +79,16 @@ export const AttendanceSelector: React.FC<AttendanceSelectorProps> = ({
 
             <div className="flex gap-sm mb-md">
                 <button onClick={selectAll} className="btn btn-secondary btn-sm">
-                    Select All Available
+                    {t('attendance.selectAll')}
                 </button>
                 <button onClick={selectNone} className="btn btn-secondary btn-sm">
-                    Clear All
+                    {t('attendance.clearAll')}
                 </button>
             </div>
 
             {players.length === 0 ? (
                 <p className="text-muted text-center" style={{ padding: 'var(--spacing-xl)' }}>
-                    No players available. Add players first!
+                    {t('attendance.noPlayers')}
                 </p>
             ) : (
                 <div style={{ display: 'grid', gap: 'var(--spacing-xs)' }}>
@@ -114,7 +116,7 @@ export const AttendanceSelector: React.FC<AttendanceSelectorProps> = ({
                                 <span style={{ fontWeight: 500, flex: 1 }}>{player.name}</span>
                                 {hasPlayedToday && (
                                     <span className="badge badge-secondary" style={{ fontSize: '0.75rem' }}>
-                                        ✓ Already played
+                                        {t('attendance.alreadyPlayed')}
                                     </span>
                                 )}
                             </label>
@@ -125,7 +127,7 @@ export const AttendanceSelector: React.FC<AttendanceSelectorProps> = ({
 
             {localSelection.size > 0 && localSelection.size < 2 && (
                 <p style={{ color: 'var(--color-accent-danger)', fontSize: '0.875rem', marginTop: 'var(--spacing-md)' }}>
-                    ⚠️ Need at least 2 players to start a game
+                    {t('attendance.minPlayers')}
                 </p>
             )}
         </div>

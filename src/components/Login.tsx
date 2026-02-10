@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export function Login() {
     const [email, setEmail] = useState('');
@@ -8,6 +9,7 @@ export function Login() {
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const { signIn, signUp } = useAuth();
+    const { t } = useLanguage();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -52,18 +54,18 @@ export function Login() {
                             backgroundClip: 'text',
                             marginLeft: 'var(--spacing-sm)'
                         }}>
-                            Macrix Darts
+                            {t('app.title')}
                         </span>
                     </h1>
                     <p className="text-muted">
-                        {isSignUp ? 'Create your account' : 'Sign in to continue'}
+                        {isSignUp ? t('app.subtitle') : t('app.subtitle')}
                     </p>
                 </div>
 
                 <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 'var(--spacing-md)' }}>
                     <div>
                         <label htmlFor="email" style={{ display: 'block', marginBottom: 'var(--spacing-xs)', fontWeight: 500 }}>
-                            Email
+                            {t('auth.email')}
                         </label>
                         <input
                             id="email"
@@ -86,7 +88,7 @@ export function Login() {
 
                     <div>
                         <label htmlFor="password" style={{ display: 'block', marginBottom: 'var(--spacing-xs)', fontWeight: 500 }}>
-                            Password
+                            {t('auth.password')}
                         </label>
                         <input
                             id="password"
@@ -131,7 +133,7 @@ export function Login() {
                         className="btn btn-primary btn-lg"
                         style={{ width: '100%' }}
                     >
-                        {loading ? 'Please wait...' : isSignUp ? 'Sign Up' : 'Sign In'}
+                        {loading ? t('common.loading') : isSignUp ? t('auth.signUpButton') : t('auth.signInButton')}
                     </button>
 
                     <button
@@ -143,7 +145,7 @@ export function Login() {
                         className="btn btn-secondary"
                         style={{ width: '100%' }}
                     >
-                        {isSignUp ? 'Already have an account? Sign In' : 'Need an account? Sign Up'}
+                        {isSignUp ? t('auth.haveAccount') : t('auth.needAccount')}
                     </button>
                 </form>
             </div>

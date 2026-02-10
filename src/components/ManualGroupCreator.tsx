@@ -1,18 +1,29 @@
 import React, { useState } from 'react';
 import { Player, Group } from '../types/types';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface ManualGroupCreatorProps {
     presentPlayers: Player[];
     onGroupsCreated: (groups: Group[]) => void;
+    initialGroups?: Group[];
 }
 
 export const ManualGroupCreator: React.FC<ManualGroupCreatorProps> = ({
     presentPlayers,
-    onGroupsCreated
+    onGroupsCreated,
+    initialGroups
 }) => {
-    const [groups, setGroups] = useState<Group[]>([
-        { id: `group-${Date.now()}-0`, players: [], results: undefined }
-    ]);
+    const { t } = useLanguage();
+    // Deep copy initialGroups to ensure we don't mutate parent state
+    const [groups, setGroups] = useState<Group[]>(() => {
+        if (initialGroups) {
+            return initialGroups.map(g => ({
+                ...g,
+                players: [...g.players]
+            }));
+        }
+        return [{ id: `group-${Date.now()}-0`, players: [], results: undefined }];
+    });
 
     const addGroup = () => {
         setGroups([...groups, {
@@ -29,7 +40,19 @@ export const ManualGroupCreator: React.FC<ManualGroupCreatorProps> = ({
     };
 
     const addPlayerToGroup = (groupIndex: number, player: Player) => {
+        // Prevent adding if already assigned to any group
+        if (getAssignedPlayerIds().has(player.id)) {
+            return;
+        }
+
         const newGroups = [...groups];
+        // Create a copy of the group to avoid mutating the original object in state/props
+        newGroups[groupIndex] = {
+            ...newGroups[groupIndex],
+            players: [...newGroups[groupIndex].players]
+        };
+
+        // Check if player is already in THIS group (redundant but safe)
         if (!newGroups[groupIndex].players.find(p => p.id === player.id)) {
             newGroups[groupIndex].players.push(player);
             setGroups(newGroups);
@@ -38,7 +61,10 @@ export const ManualGroupCreator: React.FC<ManualGroupCreatorProps> = ({
 
     const removePlayerFromGroup = (groupIndex: number, playerId: string) => {
         const newGroups = [...groups];
-        newGroups[groupIndex].players = newGroups[groupIndex].players.filter(p => p.id !== playerId);
+        newGroups[groupIndex] = {
+            ...newGroups[groupIndex],
+            players: newGroups[groupIndex].players.filter(p => p.id !== playerId)
+        };
         setGroups(newGroups);
     };
 
@@ -51,14 +77,33 @@ export const ManualGroupCreator: React.FC<ManualGroupCreatorProps> = ({
     };
 
     const unassignedPlayers = presentPlayers.filter(p => !getAssignedPlayerIds().has(p.id));
-    const canSave = groups.every(g => g.players.length >= 2) && unassignedPlayers.length === 0;
+
+    // Check for players in groups who are NOT in presentPlayers
+    const playersInGroups = groups.flatMap(g => g.players);
+    const uniquePlayersInGroups = new Set(playersInGroups.map(p => p.id));
+    const invalidPlayers = playersInGroups.filter(p => !presentPlayers.find(pp => pp.id === p.id));
+
+    // Valid if:
+    // 1. All players are assigned
+    // 2. Non-empty groups have at least 2 players
+    // 3. At least one valid group exists
+    // 4. No duplicates across groups (checked by size mismatch)
+    // 5. No players that are not "present"
+    const validGroups = groups.filter(g => g.players.length > 0);
+    const hasDuplicates = playersInGroups.length !== uniquePlayersInGroups.size;
+
+    const canSave = unassignedPlayers.length === 0 &&
+        validGroups.length > 0 &&
+        validGroups.every(g => g.players.length >= 2) &&
+        !hasDuplicates &&
+        invalidPlayers.length === 0;
 
     return (
         <div className="card fade-in">
             <div className="card-header">
-                <h3 className="card-title">✏️ Manual Group Creation</h3>
+                <h3 className="card-title">{t('manual.title')}</h3>
                 <p className="text-muted" style={{ margin: 0, fontSize: '0.875rem' }}>
-                    Manually assign players to groups
+                    {t('manual.description')}
                 </p>
             </div>
 
@@ -75,11 +120,11 @@ export const ManualGroupCreator: React.FC<ManualGroupCreatorProps> = ({
                     >
                         <div className="flex items-center justify-between mb-sm">
                             <h5 style={{ fontSize: '0.875rem', fontWeight: 700, margin: 0, color: 'var(--color-accent-primary)' }}>
-                                GROUP {groupIndex + 1}
+                                {t('game.group')} {groupIndex + 1}
                             </h5>
                             <div style={{ display: 'flex', gap: 'var(--spacing-xs)' }}>
                                 <span className="badge badge-primary">
-                                    {group.players.length} players
+                                    {group.players.length} {t('common.players')}
                                 </span>
                                 {groups.length > 1 && (
                                     <button
@@ -131,7 +176,7 @@ export const ManualGroupCreator: React.FC<ManualGroupCreatorProps> = ({
                                 style={{ fontSize: '0.875rem' }}
                                 defaultValue=""
                             >
-                                <option value="" disabled>+ Add player...</option>
+                                <option value="" disabled>{t('manual.addPlayer')}</option>
                                 {unassignedPlayers.map(player => (
                                     <option key={player.id} value={player.id}>
                                         {player.name}
@@ -148,15 +193,19 @@ export const ManualGroupCreator: React.FC<ManualGroupCreatorProps> = ({
                         className="btn btn-secondary"
                         style={{ flex: 1 }}
                     >
-                        ➕ Add Group
+                        {t('manual.addGroup')}
                     </button>
                     <button
-                        onClick={() => onGroupsCreated(groups)}
+                        onClick={() => {
+                            // Filter out empty groups before saving
+                            const validGroups = groups.filter(g => g.players.length > 0);
+                            onGroupsCreated(validGroups);
+                        }}
                         className="btn btn-primary"
                         disabled={!canSave}
                         style={{ flex: 2 }}
                     >
-                        ✅ Save Groups
+                        {t('manual.saveGroups')}
                     </button>
                 </div>
 
@@ -167,11 +216,23 @@ export const ManualGroupCreator: React.FC<ManualGroupCreatorProps> = ({
                         color: 'white',
                         borderRadius: 'var(--radius-md)',
                         fontSize: '0.875rem',
-                        textAlign: 'center'
+                        textAlign: 'center',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '4px'
                     }}>
-                        {unassignedPlayers.length > 0
-                            ? `⚠️ ${unassignedPlayers.length} player(s) not assigned`
-                            : '⚠️ Each group needs at least 2 players'}
+                        {unassignedPlayers.length > 0 && (
+                            <div>{`⚠️ ${unassignedPlayers.length} ${t('manual.unassigned')}`}</div>
+                        )}
+                        {validGroups.some(g => g.players.length < 2) && (
+                            <div>{t('manual.minPlayers')}</div>
+                        )}
+                        {hasDuplicates && (
+                            <div>{`⚠️ ${t('manual.duplicates')}`}</div>
+                        )}
+                        {invalidPlayers.length > 0 && (
+                            <div>{`⚠️ ${invalidPlayers.length} ${t('manual.playersNotPresent')}`}</div>
+                        )}
                     </div>
                 )}
             </div>

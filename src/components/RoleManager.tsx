@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface UserWithRole {
     id: string;
@@ -9,6 +10,7 @@ interface UserWithRole {
 }
 
 export function RoleManager() {
+    const { t } = useLanguage();
     const { role: currentUserRole } = useAuth();
     const [users, setUsers] = useState<UserWithRole[]>([]);
     const [loading, setLoading] = useState(true);
@@ -42,7 +44,7 @@ export function RoleManager() {
             setUsers(usersWithRoles);
         } catch (err) {
             console.error('Error loading users:', err);
-            setError('Failed to load users. Make sure you have admin permissions.');
+            setError(t('roles.loadError'));
         } finally {
             setLoading(false);
         }
@@ -72,8 +74,8 @@ export function RoleManager() {
     if (loading) {
         return (
             <div className="card">
-                <h2>Role Management</h2>
-                <p className="text-muted">Loading users...</p>
+                <h2>{t('roles.title')}</h2>
+                <p className="text-muted">{t('common.loading')}</p>
             </div>
         );
     }
@@ -81,7 +83,7 @@ export function RoleManager() {
     if (error) {
         return (
             <div className="card">
-                <h2>Role Management</h2>
+                <h2>{t('roles.title')}</h2>
                 <div style={{
                     padding: 'var(--spacing-md)',
                     background: 'var(--color-error-bg)',
@@ -91,7 +93,7 @@ export function RoleManager() {
                     {error}
                 </div>
                 <button onClick={loadUsers} className="btn btn-secondary" style={{ marginTop: 'var(--spacing-md)' }}>
-                    Retry
+                    {t('common.retry')}
                 </button>
             </div>
         );
@@ -100,14 +102,14 @@ export function RoleManager() {
     return (
         <div className="card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-lg)' }}>
-                <h2 style={{ margin: 0 }}>Role Management</h2>
+                <h2 style={{ margin: 0 }}>{t('roles.title')}</h2>
                 <button onClick={loadUsers} className="btn btn-secondary btn-sm">
-                    🔄 Refresh
+                    {t('common.refresh')}
                 </button>
             </div>
 
             {users.length === 0 ? (
-                <p className="text-muted">No users found</p>
+                <p className="text-muted">{t('roles.noUsers')}</p>
             ) : (
                 <div style={{ display: 'grid', gap: 'var(--spacing-md)' }}>
                     {users.map(user => (
@@ -143,9 +145,9 @@ export function RoleManager() {
                                     minWidth: '150px'
                                 }}
                             >
-                                <option value="user">👤 User</option>
-                                <option value="game_manager">🎮 Game Manager</option>
-                                <option value="admin">👑 Admin</option>
+                                <option value="user">👤 {t('role.user')}</option>
+                                <option value="game_manager">🎯 {t('role.gameManager')}</option>
+                                <option value="admin">🛠️ {t('role.admin')}</option>
                             </select>
                         </div>
                     ))}
@@ -159,11 +161,11 @@ export function RoleManager() {
                 borderRadius: 'var(--radius-md)',
                 fontSize: '0.875rem'
             }}>
-                <strong>Role Permissions:</strong>
+                <strong>{t('roles.permissions')}</strong>
                 <ul style={{ marginTop: 'var(--spacing-sm)', paddingLeft: 'var(--spacing-lg)' }}>
-                    <li><strong>👑 Admin:</strong> Full access - manage players, assign roles, run games</li>
-                    <li><strong>🎮 Game Manager:</strong> Can start games, draw groups, submit results</li>
-                    <li><strong>👤 User:</strong> View-only access to history and leaderboard</li>
+                    <li><strong>{t('roles.adminDesc')}</strong></li>
+                    <li><strong>{t('roles.managerDesc')}</strong></li>
+                    <li><strong>{t('roles.userDesc')}</strong></li>
                 </ul>
             </div>
         </div>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Player } from '../types/types';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface PlayerClaimDialogProps {
     players: Player[];
@@ -14,6 +15,7 @@ export const PlayerClaimDialog: React.FC<PlayerClaimDialogProps> = ({
     onClose,
     isAdmin
 }) => {
+    const { t } = useLanguage();
     const [selectedPlayerId, setSelectedPlayerId] = useState<string>('');
 
     const handleClaim = () => {
@@ -45,7 +47,7 @@ export const PlayerClaimDialog: React.FC<PlayerClaimDialogProps> = ({
             }}>
                 <div className="card-header">
                     <h3 className="card-title">
-                        👤 {isAdmin ? 'Claim Your Player Profile' : 'Player Profile Required'}
+                        👤 {isAdmin ? t('claim.adminTitle') : t('claim.title')}
                     </h3>
                 </div>
 
@@ -53,7 +55,7 @@ export const PlayerClaimDialog: React.FC<PlayerClaimDialogProps> = ({
                     {isAdmin ? (
                         <>
                             <p className="text-muted">
-                                To see your personal statistics and game history, please select your player profile from the list below.
+                                {t('claim.adminDescription')}
                             </p>
 
                             {availablePlayers.length > 0 ? (
@@ -64,7 +66,7 @@ export const PlayerClaimDialog: React.FC<PlayerClaimDialogProps> = ({
                                             marginBottom: 'var(--spacing-xs)',
                                             fontWeight: 600
                                         }}>
-                                            Select Your Player:
+                                            {t('claim.select')}
                                         </label>
                                         <select
                                             id="playerSelect"
@@ -73,7 +75,7 @@ export const PlayerClaimDialog: React.FC<PlayerClaimDialogProps> = ({
                                             onChange={(e) => setSelectedPlayerId(e.target.value)}
                                             style={{ width: '100%' }}
                                         >
-                                            <option value="">-- Choose a player --</option>
+                                            <option value="">{t('claim.choose')}</option>
                                             {availablePlayers.map(player => (
                                                 <option key={player.id} value={player.id}>
                                                     {player.name}
@@ -91,14 +93,14 @@ export const PlayerClaimDialog: React.FC<PlayerClaimDialogProps> = ({
                                             onClick={onClose}
                                             className="btn btn-secondary"
                                         >
-                                            Skip for Now
+                                            {t('claim.skip')}
                                         </button>
                                         <button
                                             onClick={handleClaim}
                                             className="btn btn-primary"
                                             disabled={!selectedPlayerId}
                                         >
-                                            Claim Profile
+                                            {t('claim.button')}
                                         </button>
                                     </div>
                                 </>
@@ -112,10 +114,10 @@ export const PlayerClaimDialog: React.FC<PlayerClaimDialogProps> = ({
                                         textAlign: 'center'
                                     }}>
                                         <p style={{ margin: 0, fontWeight: 600 }}>
-                                            ⚠️ No Available Players
+                                            ⚠️ {t('claim.noPlayers')}
                                         </p>
                                         <p style={{ margin: 'var(--spacing-xs) 0 0 0', fontSize: '0.875rem' }}>
-                                            All players are already claimed. Please contact an admin to create a new player for you.
+                                            {t('claim.allClaimed')}
                                         </p>
                                     </div>
                                     <button
@@ -123,7 +125,7 @@ export const PlayerClaimDialog: React.FC<PlayerClaimDialogProps> = ({
                                         className="btn btn-secondary"
                                         style={{ width: '100%' }}
                                     >
-                                        Close
+                                        {t('common.close')}
                                     </button>
                                 </>
                             )}
@@ -131,7 +133,7 @@ export const PlayerClaimDialog: React.FC<PlayerClaimDialogProps> = ({
                     ) : (
                         <>
                             <p className="text-muted">
-                                To access personalized features like "My Profile", you need to have a player profile linked to your account.
+                                {t('claim.description')}
                             </p>
                             <div style={{
                                 padding: 'var(--spacing-md)',
@@ -141,10 +143,10 @@ export const PlayerClaimDialog: React.FC<PlayerClaimDialogProps> = ({
                                 textAlign: 'center'
                             }}>
                                 <p style={{ margin: 0, fontWeight: 600 }}>
-                                    📧 Contact an Admin
+                                    📧 {t('claim.contactAdmin')}
                                 </p>
                                 <p style={{ margin: 'var(--spacing-xs) 0 0 0', fontSize: '0.875rem' }}>
-                                    Please ask an administrator to link your account to a player profile.
+                                    {t('claim.contactAdminDesc')}
                                 </p>
                             </div>
                             <button
@@ -152,7 +154,7 @@ export const PlayerClaimDialog: React.FC<PlayerClaimDialogProps> = ({
                                 className="btn btn-secondary"
                                 style={{ width: '100%' }}
                             >
-                                Close
+                                {t('common.close')}
                             </button>
                         </>
                     )}

@@ -1,11 +1,12 @@
 import React from 'react';
 import { Player, MonthlyStats, DailyGame } from '../types/types';
 import { TodaysGames } from './TodaysGames';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface MyProfileProps {
     player: Player;
     stats: MonthlyStats | null;
-    todaysGame: DailyGame | null;
+    todaysGames: DailyGame[];
     gameHistory: DailyGame[];
     currentMonth: string;
     onNavigateToResults?: () => void;
@@ -14,11 +15,12 @@ interface MyProfileProps {
 export const MyProfile: React.FC<MyProfileProps> = ({
     player,
     stats,
-    todaysGame,
+    todaysGames,
     gameHistory,
     currentMonth,
     onNavigateToResults
 }) => {
+    const { t, language } = useLanguage();
     const winRate = stats && stats.totalWins + stats.totalLosses > 0
         ? ((stats.totalWins / (stats.totalWins + stats.totalLosses)) * 100).toFixed(1)
         : '0.0';
@@ -50,7 +52,7 @@ export const MyProfile: React.FC<MyProfileProps> = ({
                             {player.name}
                         </h2>
                         <p style={{ margin: 'var(--spacing-xs) 0 0 0', opacity: 0.9 }}>
-                            My Profile
+                            {t('profile.title')}
                         </p>
                     </div>
                 </div>
@@ -60,7 +62,7 @@ export const MyProfile: React.FC<MyProfileProps> = ({
             {stats && (
                 <div className="card fade-in">
                     <div className="card-header">
-                        <h3 className="card-title">📊 {currentMonth} Statistics</h3>
+                        <h3 className="card-title">📊 {currentMonth} {t('profile.statsTitle')}</h3>
                     </div>
                     <div style={{
                         display: 'grid',
@@ -76,7 +78,7 @@ export const MyProfile: React.FC<MyProfileProps> = ({
                             <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--color-accent-primary)' }}>
                                 {stats.gamesPlayed}
                             </div>
-                            <div className="text-muted" style={{ fontSize: '0.875rem' }}>Games Played</div>
+                            <div className="text-muted" style={{ fontSize: '0.875rem' }}>{t('profile.gamesPlayed')}</div>
                         </div>
                         <div style={{
                             padding: 'var(--spacing-md)',
@@ -87,7 +89,7 @@ export const MyProfile: React.FC<MyProfileProps> = ({
                             <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--color-accent-success)' }}>
                                 {stats.totalWins}
                             </div>
-                            <div className="text-muted" style={{ fontSize: '0.875rem' }}>Wins</div>
+                            <div className="text-muted" style={{ fontSize: '0.875rem' }}>{t('common.wins')}</div>
                         </div>
                         <div style={{
                             padding: 'var(--spacing-md)',
@@ -98,7 +100,7 @@ export const MyProfile: React.FC<MyProfileProps> = ({
                             <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--color-accent-danger)' }}>
                                 {stats.totalLosses}
                             </div>
-                            <div className="text-muted" style={{ fontSize: '0.875rem' }}>Losses</div>
+                            <div className="text-muted" style={{ fontSize: '0.875rem' }}>{t('common.losses')}</div>
                         </div>
                         <div style={{
                             padding: 'var(--spacing-md)',
@@ -109,16 +111,16 @@ export const MyProfile: React.FC<MyProfileProps> = ({
                             <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--color-accent-primary)' }}>
                                 {winRate}%
                             </div>
-                            <div className="text-muted" style={{ fontSize: '0.875rem' }}>Win Rate</div>
+                            <div className="text-muted" style={{ fontSize: '0.875rem' }}>{t('profile.winRate')}</div>
                         </div>
                     </div>
                 </div>
             )}
 
             {/* Today's Game */}
-            {todaysGame && (
+            {todaysGames.length > 0 && (
                 <TodaysGames
-                    game={todaysGame}
+                    games={todaysGames}
                     currentUserId={player.id}
                     role={null}
                     onNavigateToResults={onNavigateToResults}
@@ -128,15 +130,15 @@ export const MyProfile: React.FC<MyProfileProps> = ({
             {/* Game History */}
             <div className="card fade-in">
                 <div className="card-header">
-                    <h3 className="card-title">🎯 My Game History</h3>
+                    <h3 className="card-title">{t('profile.historyTitle')}</h3>
                     <p className="text-muted" style={{ margin: 0, fontSize: '0.875rem' }}>
-                        {gameHistory.length} game{gameHistory.length !== 1 ? 's' : ''} this month
+                        {gameHistory.length} {t('profile.gamesThisMonth')}
                     </p>
                 </div>
 
                 {gameHistory.length === 0 ? (
                     <p className="text-muted" style={{ textAlign: 'center', padding: 'var(--spacing-xl)' }}>
-                        No games played this month
+                        {t('profile.noGames')}
                     </p>
                 ) : (
                     <div style={{ display: 'grid', gap: 'var(--spacing-sm)' }}>
@@ -171,7 +173,7 @@ export const MyProfile: React.FC<MyProfileProps> = ({
                                 >
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-sm)' }}>
                                         <div style={{ fontWeight: 600 }}>
-                                            {new Date(game.date).toLocaleDateString('en-US', {
+                                            {new Date(game.date).toLocaleDateString(language === 'pl' ? 'pl-PL' : 'en-US', {
                                                 weekday: 'short',
                                                 month: 'short',
                                                 day: 'numeric'
@@ -185,13 +187,13 @@ export const MyProfile: React.FC<MyProfileProps> = ({
                                             fontSize: '0.75rem',
                                             fontWeight: 600
                                         }}>
-                                            {isWinner ? '🏆 Winner' : `#${myResult.position}`}
+                                            {isWinner ? t('common.winner') : `#${myResult.position}`}
                                         </div>
                                     </div>
                                     <div style={{ fontSize: '0.875rem', opacity: isWinner ? 0.9 : 0.7 }}>
                                         {myResult.wins}W - {myResult.losses}L
                                         {' • '}
-                                        {myGroup.players.length} players
+                                        {myGroup.players.length} {t('common.players')}
                                     </div>
                                 </div>
                             );

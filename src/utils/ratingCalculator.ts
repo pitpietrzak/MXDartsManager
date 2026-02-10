@@ -72,3 +72,64 @@ export function calculateMonthlyRatings(
 export function sortByRating(stats: MonthlyStats[]): MonthlyStats[] {
     return [...stats].sort((a, b) => b.rating - a.rating);
 }
+
+/**
+ * Calculate basic stats (wins/losses/etc) from a list of games
+ */
+import { DailyGame } from '../types/types';
+
+export function calculateStatsFromGames(games: DailyGame[]): MonthlyStats[] {
+    const playerStatsMap = new Map<string, {
+        playerId: string;
+        playerName: string;
+        gamesPlayed: number;
+        totalWins: number;
+        totalLosses: number;
+        dateSet: Set<string>;
+    }>();
+
+    games.forEach(game => {
+        // Skip incomplete games if any slipped through (though loadMonthGames filters them)
+        if (!game.completed) return;
+
+        game.groups.forEach(group => {
+            if (!group.results) return;
+
+            group.results.forEach(result => {
+                const playerId = result.playerId;
+
+                // Find player name (available in group.players)
+                const player = group.players.find(p => p.id === playerId);
+                const playerName = player ? player.name : 'Unknown';
+
+                if (!playerStatsMap.has(playerId)) {
+                    playerStatsMap.set(playerId, {
+                        playerId,
+                        playerName,
+                        gamesPlayed: 0,
+                        totalWins: 0,
+                        totalLosses: 0,
+                        dateSet: new Set()
+                    });
+                }
+
+                const stats = playerStatsMap.get(playerId)!;
+                stats.gamesPlayed += 1;
+                stats.totalWins += result.wins;
+                stats.totalLosses += result.losses;
+                stats.dateSet.add(game.date);
+            });
+        });
+    });
+
+    // Convert map to array and calculate daysPlayed
+    return Array.from(playerStatsMap.values()).map(stats => ({
+        playerId: stats.playerId,
+        playerName: stats.playerName,
+        gamesPlayed: stats.gamesPlayed,
+        daysPlayed: stats.dateSet.size,
+        totalWins: stats.totalWins,
+        totalLosses: stats.totalLosses,
+        rating: 0 // Will be calculated by calculateMonthlyRatings
+    }));
+}

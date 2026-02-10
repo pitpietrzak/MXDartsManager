@@ -1,5 +1,7 @@
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { Player } from '../types/types';
+import { LanguageSwitcher } from './LanguageSwitcher';
 
 interface UserMenuProps {
     userPlayer?: Player | null;
@@ -8,17 +10,18 @@ interface UserMenuProps {
 
 export function UserMenu({ userPlayer, onNavigateToProfile }: UserMenuProps) {
     const { user, role, signOut } = useAuth();
+    const { t } = useLanguage();
 
     if (!user) return null;
 
     const getRoleBadge = () => {
         switch (role) {
             case 'admin':
-                return { emoji: '👑', label: 'Admin', color: 'var(--color-accent-primary)' };
+                return { emoji: '🛠️', label: t('role.admin'), color: 'var(--color-accent-primary)' };
             case 'game_manager':
-                return { emoji: '🎮', label: 'Game Manager', color: 'var(--color-accent-secondary)' };
+                return { emoji: '🎯', label: t('role.gameManager'), color: 'var(--color-accent-secondary)' };
             default:
-                return { emoji: '👤', label: 'User', color: 'var(--color-text-muted)' };
+                return { emoji: '👤', label: t('role.user'), color: 'var(--color-text-muted)' };
         }
     };
 
@@ -38,7 +41,7 @@ export function UserMenu({ userPlayer, onNavigateToProfile }: UserMenuProps) {
                 <span style={{ fontSize: '1.25rem' }}>{badge.emoji}</span>
                 <div>
                     <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '2px' }}>
-                        Hello, {user.email?.split('@')[0] || 'User'}!
+                        {t('common.hello')}, {user.email?.split('@')[0] || 'User'}!
                     </div>
                     <div style={{ fontSize: '0.75rem', color: badge.color }}>
                         {badge.label}
@@ -52,14 +55,15 @@ export function UserMenu({ userPlayer, onNavigateToProfile }: UserMenuProps) {
                         className="btn btn-secondary btn-sm"
                         title="View your profile"
                     >
-                        🏅 My Profile
+                        {t('nav.profile')}
                     </button>
                 )}
+                <LanguageSwitcher />
                 <button
                     onClick={signOut}
                     className="btn btn-secondary btn-sm"
                 >
-                    Sign Out
+                    🚪 {t('auth.signOut')}
                 </button>
             </div>
         </div>

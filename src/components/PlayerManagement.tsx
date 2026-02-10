@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Player } from '../types/types';
 import { supabase } from '../lib/supabase';
 import { linkPlayerToUser } from '../utils/supabaseStorage';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface PlayerManagementProps {
     players: Player[];
@@ -20,6 +21,7 @@ export const PlayerManagement: React.FC<PlayerManagementProps> = ({
     onAddPlayer,
     onRemovePlayer
 }) => {
+    const { t } = useLanguage();
     const [newPlayerName, setNewPlayerName] = useState('');
     const [error, setError] = useState('');
     const [users, setUsers] = useState<UserRole[]>([]);
@@ -100,9 +102,9 @@ export const PlayerManagement: React.FC<PlayerManagementProps> = ({
     return (
         <div className="card fade-in">
             <div className="card-header">
-                <h3 className="card-title">Player Management</h3>
+                <h3 className="card-title">{t('players.title')}</h3>
                 <p className="text-muted" style={{ margin: 0, fontSize: '0.875rem' }}>
-                    Add/remove players and assign them to user accounts
+                    {t('players.description')}
                 </p>
             </div>
 
@@ -111,7 +113,7 @@ export const PlayerManagement: React.FC<PlayerManagementProps> = ({
                     <input
                         type="text"
                         className="input"
-                        placeholder="Enter player name..."
+                        placeholder={t('players.placeholder')}
                         value={newPlayerName}
                         onChange={(e) => {
                             setNewPlayerName(e.target.value);
@@ -119,7 +121,7 @@ export const PlayerManagement: React.FC<PlayerManagementProps> = ({
                         }}
                     />
                     <button type="submit" className="btn btn-primary">
-                        Add Player
+                        {t('players.addPlayer')}
                     </button>
                 </div>
                 {error && (
@@ -131,11 +133,11 @@ export const PlayerManagement: React.FC<PlayerManagementProps> = ({
 
             <div>
                 <h4 style={{ fontSize: '1rem', marginBottom: 'var(--spacing-md)' }}>
-                    All Players ({players.length})
+                    {t('players.allPlayers')} ({players.length})
                 </h4>
                 {players.length === 0 ? (
                     <p className="text-muted text-center" style={{ padding: 'var(--spacing-xl)' }}>
-                        No players yet. Add your first player above!
+                        {t('players.noPlayers')}
                     </p>
                 ) : (
                     <div style={{ display: 'grid', gap: 'var(--spacing-sm)' }}>
@@ -158,8 +160,9 @@ export const PlayerManagement: React.FC<PlayerManagementProps> = ({
                                         <button
                                             onClick={() => onRemovePlayer(player.id)}
                                             className="btn btn-danger btn-sm"
+                                            style={{ minWidth: '80px', justifyContent: 'center' }}
                                         >
-                                            Remove
+                                            {t('common.delete')}
                                         </button>
                                     </div>
 
@@ -174,13 +177,14 @@ export const PlayerManagement: React.FC<PlayerManagementProps> = ({
                                                     borderRadius: 'var(--radius-sm)',
                                                     fontSize: '0.875rem'
                                                 }}>
-                                                    ✓ Linked to: {getUserEmail(linkedUserId)}
+                                                    {t('players.linkedTo')} {getUserEmail(linkedUserId)}
                                                 </div>
                                                 <button
                                                     onClick={() => handleUnlinkUser(player.id)}
                                                     className="btn btn-secondary btn-sm"
+                                                    style={{ minWidth: '80px', justifyContent: 'center' }}
                                                 >
-                                                    Unlink
+                                                    {t('players.unlink')}
                                                 </button>
                                             </>
                                         ) : (
@@ -191,7 +195,7 @@ export const PlayerManagement: React.FC<PlayerManagementProps> = ({
                                                     value={selectedUserId[player.id] || ''}
                                                     onChange={(e) => setSelectedUserId(prev => ({ ...prev, [player.id]: e.target.value }))}
                                                 >
-                                                    <option value="">-- Select user to link --</option>
+                                                    <option value="">{t('players.selectUser')}</option>
                                                     {users
                                                         .filter(user => {
                                                             // Only show users who are not already linked to any player
@@ -212,8 +216,9 @@ export const PlayerManagement: React.FC<PlayerManagementProps> = ({
                                                     onClick={() => handleLinkUser(player.id, selectedUserId[player.id])}
                                                     className="btn btn-primary btn-sm"
                                                     disabled={!selectedUserId[player.id]}
+                                                    style={{ minWidth: '80px', justifyContent: 'center' }}
                                                 >
-                                                    Link
+                                                    {t('players.link')}
                                                 </button>
                                             </>
                                         )}

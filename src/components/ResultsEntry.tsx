@@ -1,17 +1,36 @@
 import React, { useState } from 'react';
 import { Group, GameResult } from '../types/types';
 import { calculateWinsLosses } from '../utils/groupGenerator';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface ResultsEntryProps {
     groups: Group[];
     onResultsSubmit: (groups: Group[]) => void;
+    onGroupSubmit?: (groupId: string, results: GameResult[]) => Promise<void>;
 }
 
 export const ResultsEntry: React.FC<ResultsEntryProps> = ({
     groups,
-    onResultsSubmit
+    onResultsSubmit,
+    onGroupSubmit
 }) => {
+    const { t } = useLanguage();
     const [groupResults, setGroupResults] = useState<Map<string, GameResult[]>>(new Map());
+
+    // Initialize state from props
+    React.useEffect(() => {
+        const initialMap = new Map<string, GameResult[]>();
+        groups.forEach(group => {
+            if (group.results && group.results.length > 0) {
+                // Only load valid results (position > 0)
+                const validResults = group.results.filter(r => r.position > 0);
+                if (validResults.length > 0) {
+                    initialMap.set(group.id, validResults);
+                }
+            }
+        });
+        setGroupResults(initialMap);
+    }, [groups]);
 
     // Helper function to get position label
     const getPositionLabel = (position: number): string => {
@@ -27,6 +46,17 @@ export const ResultsEntry: React.FC<ResultsEntryProps> = ({
 
         const currentResults = groupResults.get(groupId) || [];
 
+        // Check if player is already selected at this position (Unselect)
+        const currentResult = currentResults.find(r => r.playerId === playerId);
+        if (currentResult && currentResult.position === position) {
+            const userId = playerId; // just for clarity
+            const updatedResults = currentResults.filter(r => r.playerId !== userId);
+            const newMap = new Map(groupResults);
+            newMap.set(groupId, updatedResults);
+            setGroupResults(newMap);
+            return;
+        }
+
         // Check if position is already taken by another player
         const positionTaken = currentResults.some(r => r.playerId !== playerId && r.position === position);
         if (positionTaken) {
@@ -34,7 +64,7 @@ export const ResultsEntry: React.FC<ResultsEntryProps> = ({
             return;
         }
 
-        // Remove any existing result for this player
+        // Remove any existing result for this player (change position)
         const filteredResults = currentResults.filter(r => r.playerId !== playerId);
 
         // Calculate wins/losses based on position and group size
@@ -79,10 +109,10 @@ export const ResultsEntry: React.FC<ResultsEntryProps> = ({
         return (
             <div className="card fade-in">
                 <div className="card-header">
-                    <h3 className="card-title">Enter Results</h3>
+                    <h3 className="card-title">{t('results.title')}</h3>
                 </div>
                 <p className="text-muted text-center" style={{ padding: 'var(--spacing-xl)' }}>
-                    Draw groups first to enter results
+                    {t('results.drawFirst')}
                 </p>
             </div>
         );
@@ -91,9 +121,9 @@ export const ResultsEntry: React.FC<ResultsEntryProps> = ({
     return (
         <div className="card fade-in">
             <div className="card-header">
-                <h3 className="card-title">Enter Results</h3>
+                <h3 className="card-title">{t('results.title')}</h3>
                 <p className="text-muted" style={{ margin: 0, fontSize: '0.875rem' }}>
-                    Rank players by their finishing position in each group
+                    {t('results.instruction')}
                 </p>
             </div>
 
@@ -114,10 +144,10 @@ export const ResultsEntry: React.FC<ResultsEntryProps> = ({
                         >
                             <div className="flex items-center justify-between mb-md">
                                 <h4 style={{ fontSize: '1rem', margin: 0 }}>
-                                    Group {groupIndex + 1}
+                                    {t('game.group')} {groupIndex + 1}
                                 </h4>
                                 {isComplete && (
-                                    <span className="badge badge-success">✓ Complete</span>
+                                    <span className="badge badge-success">{t('results.complete')}</span>
                                 )}
                             </div>
 
@@ -166,11 +196,23 @@ export const ResultsEntry: React.FC<ResultsEntryProps> = ({
                             </div>
 
                             {isComplete && (
-                                <div className="mt-sm" style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                                    Results: {results.sort((a, b) => a.position - b.position).map(r => {
-                                        const player = group.players.find(p => p.id === r.playerId);
-                                        return `${player?.name}: ${r.wins}-${r.losses}`;
-                                    }).join(' • ')}
+                                <div className="mt-sm">
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: 'var(--spacing-sm)' }}>
+                                        {t('game.results')}: {results.sort((a, b) => a.position - b.position).map(r => {
+                                            const player = group.players.find(p => p.id === r.playerId);
+                                            return `${player?.name}: ${r.wins}-${r.losses}`;
+                                        }).join(' • ')}
+                                    </div>
+
+                                    {onGroupSubmit && (
+                                        <button
+                                            onClick={() => onGroupSubmit(group.id, results)}
+                                            className="btn btn-success btn-sm"
+                                            style={{ width: '100%' }}
+                                        >
+                                            {t('game.confirmGroup')}
+                                        </button>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -178,14 +220,16 @@ export const ResultsEntry: React.FC<ResultsEntryProps> = ({
                 })}
             </div>
 
-            <button
-                onClick={handleSubmit}
-                disabled={!allGroupsComplete}
-                className="btn btn-success btn-lg mt-lg"
-                style={{ width: '100%' }}
-            >
-                {allGroupsComplete ? '✓ Submit Results' : `Complete all groups (${groups.filter(g => isGroupComplete(g.id)).length}/${groups.length})`}
-            </button>
+            {!onGroupSubmit && (
+                <button
+                    onClick={handleSubmit}
+                    disabled={!allGroupsComplete}
+                    className="btn btn-success btn-lg mt-lg"
+                    style={{ width: '100%' }}
+                >
+                    {allGroupsComplete ? t('game.submitResults') : `${t('game.completeAllGroups')} (${groups.filter(g => isGroupComplete(g.id)).length}/${groups.length})`}
+                </button>
+            )}
         </div>
     );
 };

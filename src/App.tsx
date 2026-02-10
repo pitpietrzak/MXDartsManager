@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Player, Group, DailyGame, MonthlyStats } from './types/types';
+import { Player, Group, DailyGame, MonthlyStats, GameResult } from './types/types';
 import { PlayerManagement } from './components/PlayerManagement';
 import { AttendanceSelector } from './components/AttendanceSelector';
 import { GroupDrawer } from './components/GroupDrawer';
@@ -14,23 +14,23 @@ import { ManualGroupCreator } from './components/ManualGroupCreator';
 import { PlayerClaimDialog } from './components/PlayerClaimDialog';
 import { MyProfile } from './components/MyProfile';
 import { useAuth } from './contexts/AuthContext';
+import { useLanguage } from './contexts/LanguageContext';
 import {
   loadPlayers,
   addPlayer as dbAddPlayer,
   removePlayer as dbRemovePlayer,
   loadMonthGames,
-  saveGame as dbSaveGame,
   saveIncompleteGame as dbSaveIncompleteGame,
-  calculateMonthlyStats as dbCalculateMonthlyStats,
   deleteGame as dbDeleteGame,
-  getTodaysGame,
+  getTodaysGames,
   getCurrentMonth,
   getPlayerByUserId,
   linkPlayerToUser,
-  getUserStats,
-  getUserGameHistory
+  getUserGameHistory,
+  saveGroupResults,
+  updateDailyGroups
 } from './utils/supabaseStorage';
-import { calculateMonthlyRatings } from './utils/ratingCalculator';
+import { calculateMonthlyRatings, calculateStatsFromGames } from './utils/ratingCalculator';
 import './index.css';
 
 
@@ -38,12 +38,13 @@ type View = 'dashboard' | 'players' | 'newGame' | 'leaderboard' | 'history' | 'm
 
 function App() {
   const { user, role, loading: authLoading } = useAuth();
+  const { t } = useLanguage();
   const [players, setPlayers] = useState<Player[]>([]);
   const [games, setGames] = useState<DailyGame[]>([]);
   const [stats, setStats] = useState<MonthlyStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState<View>('dashboard');
-  const [todaysGame, setTodaysGame] = useState<DailyGame | null>(null);
+  const [todaysGames, setTodaysGames] = useState<DailyGame[]>([]);
   const [userPlayer, setUserPlayer] = useState<Player | null>(null);
   const [userStats, setUserStats] = useState<MonthlyStats | null>(null);
   const [userGameHistory, setUserGameHistory] = useState<DailyGame[]>([]);
@@ -54,6 +55,7 @@ function App() {
     new Date().toISOString().split('T')[0]
   );
   const [manualEntry, setManualEntry] = useState(false);
+  const [isEditingGroups, setIsEditingGroups] = useState(false);
 
   const currentMonth = getCurrentMonth();
 
@@ -70,16 +72,20 @@ function App() {
     async function loadData() {
       setLoading(true);
       try {
-        const [loadedPlayers, loadedGames, loadedStats, loadedTodaysGame] = await Promise.all([
+        const [loadedPlayers, loadedGames, loadedTodaysGames] = await Promise.all([
           loadPlayers(),
           loadMonthGames(currentMonth),
-          dbCalculateMonthlyStats(currentMonth),
-          getTodaysGame()
+          getTodaysGames()
         ]);
 
         setPlayers(loadedPlayers);
         setGames(loadedGames);
-        setTodaysGame(loadedTodaysGame);
+        setTodaysGames(loadedTodaysGames);
+
+        // Calculate stats client-side from completed games
+        const calculatedStats = calculateStatsFromGames(loadedGames);
+        const statsWithRatings = calculateMonthlyRatings(calculatedStats);
+        setStats(statsWithRatings);
 
         // Load user's player association if logged in
         if (user?.id) {
@@ -89,10 +95,11 @@ function App() {
           setUserPlayer(player);
 
           if (player) {
-            const [playerStats, playerHistory] = await Promise.all([
-              getUserStats(player.id, currentMonth),
-              getUserGameHistory(player.id, currentMonth)
-            ]);
+            const playerHistory = await getUserGameHistory(player.id, currentMonth);
+
+            // Calculate user stats from the main stats array
+            const playerStats = statsWithRatings.find(s => s.playerId === player.id) || null;
+
             console.log('User stats:', playerStats);
             console.log('User game history:', playerHistory);
             setUserStats(playerStats);
@@ -103,10 +110,6 @@ function App() {
             setShowPlayerClaim(true);
           }
         }
-
-        // Calculate ratings for stats
-        const statsWithRatings = calculateMonthlyRatings(loadedStats);
-        setStats(statsWithRatings);
       } catch (error) {
         console.error('Error loading data:', error);
       } finally {
@@ -119,28 +122,41 @@ function App() {
 
   // Recalculate ratings when stats change
   useEffect(() => {
-    if (stats.length > 0) {
-      const updatedStats = calculateMonthlyRatings(stats);
-      if (JSON.stringify(updatedStats) !== JSON.stringify(stats)) {
-        setStats(updatedStats);
+    // Re-calculate if games change
+    if (games.length > 0) {
+      const calculatedStats = calculateStatsFromGames(games);
+      const statsWithRatings = calculateMonthlyRatings(calculatedStats);
+      if (JSON.stringify(statsWithRatings) !== JSON.stringify(stats)) {
+        setStats(statsWithRatings);
       }
     }
-  }, [games, stats]);
+  }, [games]);
 
   // Reload data helper
   const reloadData = async () => {
     try {
-      const [loadedPlayers, loadedGames, loadedStats] = await Promise.all([
+      const [loadedPlayers, loadedGames, loadedTodaysGames] = await Promise.all([
         loadPlayers(),
         loadMonthGames(currentMonth),
-        dbCalculateMonthlyStats(currentMonth)
+        getTodaysGames()
       ]);
 
       setPlayers(loadedPlayers);
       setGames(loadedGames);
+      setTodaysGames(loadedTodaysGames);
 
-      const statsWithRatings = calculateMonthlyRatings(loadedStats);
+      const calculatedStats = calculateStatsFromGames(loadedGames);
+      const statsWithRatings = calculateMonthlyRatings(calculatedStats);
       setStats(statsWithRatings);
+
+      // Update user stats if logged in
+      if (userPlayer) {
+        const playerStats = statsWithRatings.find(s => s.playerId === userPlayer.id) || null;
+        setUserStats(playerStats);
+
+        const history = await getUserGameHistory(userPlayer.id, currentMonth);
+        setUserGameHistory(history);
+      }
     } catch (error) {
       console.error('Error reloading data:', error);
     }
@@ -194,35 +210,43 @@ function App() {
   };
 
   const handleGroupsGenerated = async (groups: Group[]) => {
-    setDrawnGroups(groups);
-
     // Save incomplete game to database so it appears in Today's Games
-    const gameId = await dbSaveIncompleteGame(selectedDate, currentMonth, groups);
-    if (gameId) {
+    // This generates real UUIDs for the groups
+    const gameIds = await dbSaveIncompleteGame(selectedDate, currentMonth, groups);
+
+    if (gameIds && gameIds.length > 0) {
       await reloadData(); // Reload to show in Today's Games
+
+      // Fetch fresh data to get the real UUIDs
+      const freshGames = await getTodaysGames();
+      if (freshGames.length > 0) {
+        setTodaysGames(freshGames); // Ensure state is largely consistent
+        const allGroups = freshGames.flatMap(g => g.groups);
+        setDrawnGroups(allGroups);
+      }
     }
   };
 
   const handleResultsSubmit = async (groupsWithResults: Group[]) => {
     console.log('handleResultsSubmit - Starting with groups:', groupsWithResults);
-    console.log('handleResultsSubmit - Selected date:', selectedDate);
+    // Logic for bulk submit is deprecated/hidden but we can keep basic handling or leave as is since button is hidden
+    // For now, assume this flow is replaced by per-group submission
+  };
 
-    const gameMonth = selectedDate.substring(0, 7); // Extract YYYY-MM from selected date
-    const gameId = await dbSaveGame(selectedDate, gameMonth, groupsWithResults);
-
-    console.log('handleResultsSubmit - Returned gameId:', gameId);
-
-    if (gameId) {
-      // Reload all data to get updated stats
+  const handleGroupResultSubmit = async (groupId: string, results: GameResult[]) => {
+    const success = await saveGroupResults(groupId, results);
+    if (success) {
       await reloadData();
 
-      // Reset for next game
-      setSelectedPlayerIds([]);
-      setDrawnGroups([]);
-      setSelectedDate(new Date().toISOString().split('T')[0]); // Reset to today
-      setCurrentView('leaderboard');
+      // Update drawnGroups with the new results to reflect saved state immediately
+      setDrawnGroups(prev => prev.map(g => {
+        if (g.id === groupId) {
+          return { ...g, results };
+        }
+        return g;
+      }));
     } else {
-      console.error('Failed to save game');
+      alert('Failed to save group results');
     }
   };
 
@@ -243,7 +267,7 @@ function App() {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--color-bg-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ textAlign: 'center' }}>
-          <h2>Loading...</h2>
+          <h2>{t('common.loading')}</h2>
           <p className="text-muted">Initializing...</p>
         </div>
       </div>
@@ -260,8 +284,8 @@ function App() {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--color-bg-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ textAlign: 'center' }}>
-          <h2>Loading...</h2>
-          <p className="text-muted">Connecting to database</p>
+          <h2>{t('common.loading')}</h2>
+          <p className="text-muted">{t('common.connecting')}</p>
         </div>
       </div>
     );
@@ -299,29 +323,43 @@ function App() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--spacing-md)' }}>
             <div className="flex items-center gap-md" style={{ flexWrap: 'wrap' }}>
               <button onClick={() => setCurrentView('dashboard')} className={currentView === 'dashboard' ? 'btn btn-primary' : 'btn btn-secondary'}>
-                📊 Dashboard
+                {t('nav.dashboard')}
               </button>
               {canAccessView('players') && (
                 <button onClick={() => setCurrentView('players')} className={currentView === 'players' ? 'btn btn-primary' : 'btn btn-secondary'}>
-                  👥 Players
+                  {t('nav.players')}
                 </button>
               )}
               {canAccessView('newGame') && (
-                <button onClick={() => setCurrentView('newGame')} className={currentView === 'newGame' ? 'btn btn-primary' : 'btn btn-secondary'}>
-                  🎮 New Game
+                <button
+                  onClick={() => {
+                    setCurrentView('newGame');
+                    // Auto-load today's groups if available
+                    if (todaysGames.length > 0 && selectedDate === new Date().toISOString().split('T')[0]) {
+                      const allGroups = todaysGames.flatMap(g => g.groups);
+                      setDrawnGroups(allGroups);
+                      const playerIds = allGroups.flatMap(g => g.players.map(p => p.id));
+                      setSelectedPlayerIds(playerIds);
+                    }
+                  }}
+                  className={currentView === 'newGame' ? 'btn btn-primary' : 'btn btn-secondary'}
+                >
+                  {t('nav.newGame')}
                 </button>
               )}
               <button onClick={() => setCurrentView('leaderboard')} className={currentView === 'leaderboard' ? 'btn btn-primary' : 'btn btn-secondary'}>
-                🏆 Leaderboard
+                {t('nav.leaderboard')}
               </button>
               <button onClick={() => setCurrentView('history')} className={currentView === 'history' ? 'btn btn-primary' : 'btn btn-secondary'}>
-                📜 History
+                {t('nav.history')}
               </button>
             </div>
-            <UserMenu
-              userPlayer={userPlayer}
-              onNavigateToProfile={() => setCurrentView('myProfile')}
-            />
+            <div className="flex items-center gap-md">
+              <UserMenu
+                userPlayer={userPlayer}
+                onNavigateToProfile={() => setCurrentView('myProfile')}
+              />
+            </div>
           </div>
         </div>
       </header>
@@ -331,22 +369,22 @@ function App() {
         {currentView === 'dashboard' && (
           <div style={{ display: 'grid', gap: 'var(--spacing-lg)' }}>
             <div className="card fade-in">
-              <h2 style={{ marginBottom: 'var(--spacing-md)' }}>Welcome to MX Dart League! 🎯</h2>
+              <h2 style={{ marginBottom: 'var(--spacing-md)' }}>{t('dashboard.welcome')}</h2>
               <p className="text-muted" style={{ marginBottom: 'var(--spacing-lg)' }}>
-                Manage your daily dart competitions, track player statistics, and crown the Darter of the Month!
+                {t('dashboard.description')}
               </p>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--spacing-md)' }}>
                 <div style={{ padding: 'var(--spacing-lg)', background: 'var(--color-bg-secondary)', borderRadius: 'var(--radius-lg)', textAlign: 'center' }}>
                   <div style={{ fontSize: '2rem', marginBottom: 'var(--spacing-sm)' }}>👥</div>
                   <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-accent-primary)' }}>{players.length}</div>
-                  <div className="text-muted" style={{ fontSize: '0.875rem' }}>Total Players</div>
+                  <div className="text-muted" style={{ fontSize: '0.875rem' }}>{t('dashboard.totalPlayers')}</div>
                 </div>
 
                 <div style={{ padding: 'var(--spacing-lg)', background: 'var(--color-bg-secondary)', borderRadius: 'var(--radius-lg)', textAlign: 'center' }}>
                   <div style={{ fontSize: '2rem', marginBottom: 'var(--spacing-sm)' }}>🎯</div>
                   <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-accent-primary)' }}>{games.length}</div>
-                  <div className="text-muted" style={{ fontSize: '0.875rem' }}>Games This Month</div>
+                  <div className="text-muted" style={{ fontSize: '0.875rem' }}>{t('dashboard.gamesMonth')}</div>
                 </div>
 
                 <div style={{ padding: 'var(--spacing-lg)', background: 'var(--color-bg-secondary)', borderRadius: 'var(--radius-lg)', textAlign: 'center' }}>
@@ -356,30 +394,36 @@ function App() {
                       ? [...stats].sort((a, b) => b.rating - a.rating)[0]?.playerName || '-'
                       : '-'}
                   </div>
-                  <div className="text-muted" style={{ fontSize: '0.875rem' }}>Current Leader</div>
+                  <div className="text-muted" style={{ fontSize: '0.875rem' }}>{t('dashboard.currentLeader')}</div>
                 </div>
               </div>
 
               {canAccessView('newGame') && (
                 <div className="mt-lg">
                   <button onClick={() => setCurrentView('newGame')} className="btn btn-primary btn-lg" style={{ width: '100%' }}>
-                    🎯 Start New Game
+                    {t('dashboard.startNewGame')}
                   </button>
                 </div>
               )}
             </div>
 
             <TodaysGames
-              game={todaysGame}
+              games={todaysGames}
               currentUserId={user?.id || null}
               role={role}
               onNavigateToResults={() => {
-                // Load the existing game's groups into state
-                if (todaysGame && todaysGame.groups) {
-                  setDrawnGroups(todaysGame.groups);
-                  setSelectedDate(todaysGame.date);
+                // Load the existing games groups into state
+                if (todaysGames.length > 0) {
+                  // Flatten groups from all games
+                  const allGroups = todaysGames.flatMap(g => g.groups);
+                  setDrawnGroups(allGroups);
+
+                  if (todaysGames[0]) {
+                    setSelectedDate(todaysGames[0].date);
+                  }
+
                   // Set selected players based on groups
-                  const playerIds = todaysGame.groups.flatMap(g => g.players.map(p => p.id));
+                  const playerIds = allGroups.flatMap(g => g.players.map(p => p.id));
                   setSelectedPlayerIds(playerIds);
                 }
                 setCurrentView('newGame');
@@ -410,7 +454,7 @@ function App() {
             <div style={{ display: 'grid', gap: 'var(--spacing-lg)' }}>
               {role === 'admin' && (
                 <div className="card">
-                  <h3 style={{ marginBottom: 'var(--spacing-md)' }}>Game Date</h3>
+                  <h3 style={{ marginBottom: 'var(--spacing-md)' }}>{t('game.date')}</h3>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)' }}>
                     <input
                       type="date"
@@ -448,7 +492,7 @@ function App() {
                     )}
                   </div>
                   <p className="text-muted" style={{ fontSize: '0.875rem', marginTop: 'var(--spacing-sm)' }}>
-                    Select a past weekday to add a game that was forgotten
+                    {t('game.selectPastDate')}
                   </p>
 
                   {(role === 'admin' || (role === 'game_manager' && selectedDate === new Date().toISOString().split('T')[0])) && (
@@ -461,7 +505,7 @@ function App() {
                         style={{ width: '18px', height: '18px', cursor: 'pointer' }}
                       />
                       <label htmlFor="manualEntry" style={{ cursor: 'pointer', fontSize: '0.9rem' }}>
-                        Manual entry (skip group drawing)
+                        {t('game.manualEntry')}
                       </label>
                     </div>
                   )}
@@ -474,7 +518,7 @@ function App() {
                   color: 'white',
                   border: 'none'
                 }}>
-                  <h3 style={{ marginBottom: 'var(--spacing-sm)', color: 'white' }}>⚠️ Weekend - No Games</h3>
+                  <h3 style={{ marginBottom: 'var(--spacing-sm)', color: 'white' }}>{t('game.weekendWarning')}</h3>
                   <p style={{ margin: 0 }}>
                     Games cannot be created on weekends (Saturday & Sunday). Please select a weekday.
                   </p>
@@ -490,7 +534,7 @@ function App() {
                     playersWhoPlayedToday={getPlayersWhoPlayedToday()}
                   />
 
-                  {selectedPlayerIds.length >= 2 && !manualEntry && (
+                  {selectedPlayerIds.length >= 2 && !manualEntry && drawnGroups.length === 0 && (
                     <GroupDrawer
                       presentPlayers={presentPlayers}
                       groups={drawnGroups}
@@ -500,18 +544,92 @@ function App() {
                 </>
               )}
 
-              {manualEntry && selectedPlayerIds.length >= 2 && !isWeekend(selectedDate) && (
+
+              {manualEntry && selectedPlayerIds.length >= 2 && !isWeekend(selectedDate) && !isEditingGroups && drawnGroups.length === 0 && (
                 <ManualGroupCreator
                   presentPlayers={presentPlayers}
                   onGroupsCreated={handleGroupsGenerated}
                 />
               )}
 
-              {drawnGroups.length > 0 && (
-                <ResultsEntry
-                  groups={drawnGroups}
-                  onResultsSubmit={handleResultsSubmit}
-                />
+              {isEditingGroups && (
+                <div className="card fade-in">
+                  <div className="flex items-center justify-between mb-md">
+                    <h3 style={{ margin: 0 }}>{t('manual.title')}</h3>
+                    <div className="flex gap-sm">
+                      <button
+                        onClick={async () => {
+                          if (window.confirm(t('history.deleteConfirmation') || 'Are you sure you want to delete all scheduled games for today?')) {
+                            const success = await updateDailyGroups(selectedDate, currentMonth, []);
+                            if (success) {
+                              await reloadData();
+                              setIsEditingGroups(false);
+                              setTodaysGames([]);
+                              setDrawnGroups([]);
+                            } else {
+                              alert('Failed to delete games');
+                            }
+                          }
+                        }}
+                        className="btn"
+                        style={{
+                          background: 'var(--color-accent-danger)',
+                          color: 'white',
+                          border: 'none'
+                        }}
+                      >
+                        {t('common.delete')}
+                      </button>
+                      <button
+                        onClick={() => setIsEditingGroups(false)}
+                        className="btn btn-secondary"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                  <ManualGroupCreator
+                    presentPlayers={presentPlayers}
+                    initialGroups={drawnGroups}
+                    onGroupsCreated={async (newGroups) => {
+                      const success = await updateDailyGroups(selectedDate, currentMonth, newGroups);
+                      if (success) {
+                        await reloadData();
+                        setIsEditingGroups(false);
+
+                        // Refresh local state
+                        const freshGames = await getTodaysGames();
+                        if (freshGames.length > 0) {
+                          setTodaysGames(freshGames);
+                          setDrawnGroups(freshGames.flatMap(g => g.groups));
+                        }
+                      } else {
+                        alert('Failed to update groups');
+                      }
+                    }}
+                  />
+                </div>
+              )}
+
+              {drawnGroups.length > 0 && !isEditingGroups && (
+                <>
+                  {(role === 'admin' || role === 'game_manager') && (
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 'var(--spacing-md)' }}>
+                      <button
+                        onClick={() => setIsEditingGroups(true)}
+                        className="btn btn-secondary"
+                        style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-xs)' }}
+                      >
+                        {t('manual.editGroups') || 'Edit Groups'}
+                      </button>
+                    </div>
+                  )}
+                  <ResultsEntry
+                    groups={drawnGroups}
+                    onResultsSubmit={handleResultsSubmit}
+                    onGroupSubmit={handleGroupResultSubmit}
+                  />
+                </>
               )}
             </div>
           )
@@ -542,7 +660,7 @@ function App() {
           <MyProfile
             player={userPlayer}
             stats={userStats}
-            todaysGame={todaysGame}
+            todaysGames={todaysGames}
             gameHistory={userGameHistory}
             currentMonth={currentMonth}
           />
