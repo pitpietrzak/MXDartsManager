@@ -42,6 +42,14 @@ function App() {
 
   const currentMonth = getCurrentMonth();
 
+  // Helper function to check if a date is a weekend
+  const isWeekend = (dateStr: string): boolean => {
+    const date = new Date(dateStr);
+    const day = date.getDay();
+    return day === 0 || day === 6; // 0 = Sunday, 6 = Saturday
+  };
+
+
   // Load initial data from Supabase
   useEffect(() => {
     async function loadData() {
@@ -320,7 +328,14 @@ function App() {
                     <input
                       type="date"
                       value={selectedDate}
-                      onChange={(e) => setSelectedDate(e.target.value)}
+                      onChange={(e) => {
+                        const newDate = e.target.value;
+                        if (!isWeekend(newDate)) {
+                          setSelectedDate(newDate);
+                        } else {
+                          alert('Cannot select weekend dates. Games are only allowed on weekdays.');
+                        }
+                      }}
                       max={new Date().toISOString().split('T')[0]}
                       style={{
                         padding: 'var(--spacing-sm) var(--spacing-md)',
@@ -346,37 +361,56 @@ function App() {
                     )}
                   </div>
                   <p className="text-muted" style={{ fontSize: '0.875rem', marginTop: 'var(--spacing-sm)' }}>
-                    Select a past date to add a game that was forgotten
+                    Select a past weekday to add a game that was forgotten
                   </p>
 
-                  <div style={{ marginTop: 'var(--spacing-md)', display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
-                    <input
-                      type="checkbox"
-                      id="manualEntry"
-                      checked={manualEntry}
-                      onChange={(e) => setManualEntry(e.target.checked)}
-                      style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                    />
-                    <label htmlFor="manualEntry" style={{ cursor: 'pointer', fontSize: '0.9rem' }}>
-                      Manual entry (skip group drawing)
-                    </label>
-                  </div>
+                  {(role === 'admin' || (role === 'game_manager' && selectedDate === new Date().toISOString().split('T')[0])) && (
+                    <div style={{ marginTop: 'var(--spacing-md)', display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
+                      <input
+                        type="checkbox"
+                        id="manualEntry"
+                        checked={manualEntry}
+                        onChange={(e) => setManualEntry(e.target.checked)}
+                        style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                      />
+                      <label htmlFor="manualEntry" style={{ cursor: 'pointer', fontSize: '0.9rem' }}>
+                        Manual entry (skip group drawing)
+                      </label>
+                    </div>
+                  )}
                 </div>
               )}
 
-              <AttendanceSelector
-                players={players}
-                selectedPlayerIds={selectedPlayerIds}
-                onSelectionChange={setSelectedPlayerIds}
-                playersWhoPlayedToday={getPlayersWhoPlayedToday()}
-              />
+              {isWeekend(selectedDate) && (
+                <div className="card" style={{
+                  background: 'var(--color-accent-danger)',
+                  color: 'white',
+                  border: 'none'
+                }}>
+                  <h3 style={{ marginBottom: 'var(--spacing-sm)', color: 'white' }}>⚠️ Weekend - No Games</h3>
+                  <p style={{ margin: 0 }}>
+                    Games cannot be created on weekends (Saturday & Sunday). Please select a weekday.
+                  </p>
+                </div>
+              )}
 
-              {selectedPlayerIds.length >= 2 && !manualEntry && (
-                <GroupDrawer
-                  presentPlayers={presentPlayers}
-                  groups={drawnGroups}
-                  onGroupsGenerated={handleGroupsGenerated}
-                />
+              {!isWeekend(selectedDate) && (
+                <>
+                  <AttendanceSelector
+                    players={players}
+                    selectedPlayerIds={selectedPlayerIds}
+                    onSelectionChange={setSelectedPlayerIds}
+                    playersWhoPlayedToday={getPlayersWhoPlayedToday()}
+                  />
+
+                  {selectedPlayerIds.length >= 2 && !manualEntry && (
+                    <GroupDrawer
+                      presentPlayers={presentPlayers}
+                      groups={drawnGroups}
+                      onGroupsGenerated={handleGroupsGenerated}
+                    />
+                  )}
+                </>
               )}
 
               {manualEntry && selectedPlayerIds.length >= 2 && (
