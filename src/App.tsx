@@ -9,6 +9,8 @@ import { GameHistory } from './components/GameHistory';
 import { Login } from './components/Login';
 import { UserMenu } from './components/UserMenu';
 import { RoleManager } from './components/RoleManager';
+import { TodaysGames } from './components/TodaysGames';
+import { ManualGroupCreator } from './components/ManualGroupCreator';
 import { useAuth } from './contexts/AuthContext';
 import {
   loadPlayers,
@@ -16,8 +18,10 @@ import {
   removePlayer as dbRemovePlayer,
   loadMonthGames,
   saveGame as dbSaveGame,
+  saveIncompleteGame as dbSaveIncompleteGame,
   calculateMonthlyStats as dbCalculateMonthlyStats,
   deleteGame as dbDeleteGame,
+  getTodaysGame,
   getCurrentMonth
 } from './utils/supabaseStorage';
 import { calculateMonthlyRatings } from './utils/ratingCalculator';
@@ -35,6 +39,7 @@ function App() {
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const [drawnGroups, setDrawnGroups] = useState<Group[]>([]);
+  const [todaysGame, setTodaysGame] = useState<DailyGame | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>(
     new Date().toISOString().split('T')[0]
   );
@@ -55,14 +60,16 @@ function App() {
     async function loadData() {
       setLoading(true);
       try {
-        const [loadedPlayers, loadedGames, loadedStats] = await Promise.all([
+        const [loadedPlayers, loadedGames, loadedStats, loadedTodaysGame] = await Promise.all([
           loadPlayers(),
           loadMonthGames(currentMonth),
-          dbCalculateMonthlyStats(currentMonth)
+          dbCalculateMonthlyStats(currentMonth),
+          getTodaysGame()
         ]);
 
         setPlayers(loadedPlayers);
         setGames(loadedGames);
+        setTodaysGame(loadedTodaysGame);
 
         // Calculate ratings for stats
         const statsWithRatings = calculateMonthlyRatings(loadedStats);
@@ -137,13 +144,24 @@ function App() {
     return playersOnDate;
   };
 
-  const handleGroupsGenerated = (groups: Group[]) => {
+  const handleGroupsGenerated = async (groups: Group[]) => {
     setDrawnGroups(groups);
+
+    // Save incomplete game to database so it appears in Today's Games
+    const gameId = await dbSaveIncompleteGame(selectedDate, currentMonth, groups);
+    if (gameId) {
+      await reloadData(); // Reload to show in Today's Games
+    }
   };
 
   const handleResultsSubmit = async (groupsWithResults: Group[]) => {
+    console.log('handleResultsSubmit - Starting with groups:', groupsWithResults);
+    console.log('handleResultsSubmit - Selected date:', selectedDate);
+
     const gameMonth = selectedDate.substring(0, 7); // Extract YYYY-MM from selected date
     const gameId = await dbSaveGame(selectedDate, gameMonth, groupsWithResults);
+
+    console.log('handleResultsSubmit - Returned gameId:', gameId);
 
     if (gameId) {
       // Reload all data to get updated stats
@@ -299,6 +317,23 @@ function App() {
               )}
             </div>
 
+            <TodaysGames
+              game={todaysGame}
+              currentUserId={user?.id || null}
+              role={role}
+              onNavigateToResults={() => {
+                // Load the existing game's groups into state
+                if (todaysGame && todaysGame.groups) {
+                  setDrawnGroups(todaysGame.groups);
+                  setSelectedDate(todaysGame.date);
+                  // Set selected players based on groups
+                  const playerIds = todaysGame.groups.flatMap(g => g.players.map(p => p.id));
+                  setSelectedPlayerIds(playerIds);
+                }
+                setCurrentView('newGame');
+              }}
+            />
+
             {stats.length > 0 && (
               <Leaderboard stats={stats} currentMonth={currentMonth} />
             )}
@@ -413,26 +448,11 @@ function App() {
                 </>
               )}
 
-              {manualEntry && selectedPlayerIds.length >= 2 && (
-                <div className="card">
-                  <h3 style={{ marginBottom: 'var(--spacing-md)' }}>Manual Results Entry</h3>
-                  <p className="text-muted" style={{ marginBottom: 'var(--spacing-md)' }}>
-                    Enter results manually without drawing groups. Click "Create Group" to add groups.
-                  </p>
-                  <button
-                    onClick={() => {
-                      const newGroup: Group = {
-                        id: `manual-${Date.now()}`,
-                        players: presentPlayers,
-                        results: []
-                      };
-                      setDrawnGroups([...drawnGroups, newGroup]);
-                    }}
-                    className="btn btn-primary"
-                  >
-                    ➕ Create Group
-                  </button>
-                </div>
+              {manualEntry && selectedPlayerIds.length >= 2 && !isWeekend(selectedDate) && (
+                <ManualGroupCreator
+                  presentPlayers={presentPlayers}
+                  onGroupsCreated={handleGroupsGenerated}
+                />
               )}
 
               {drawnGroups.length > 0 && (

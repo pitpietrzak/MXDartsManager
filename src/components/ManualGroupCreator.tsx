@@ -1,0 +1,180 @@
+import React, { useState } from 'react';
+import { Player, Group } from '../types/types';
+
+interface ManualGroupCreatorProps {
+    presentPlayers: Player[];
+    onGroupsCreated: (groups: Group[]) => void;
+}
+
+export const ManualGroupCreator: React.FC<ManualGroupCreatorProps> = ({
+    presentPlayers,
+    onGroupsCreated
+}) => {
+    const [groups, setGroups] = useState<Group[]>([
+        { id: `group-${Date.now()}-0`, players: [], results: undefined }
+    ]);
+
+    const addGroup = () => {
+        setGroups([...groups, {
+            id: `group-${Date.now()}-${groups.length}`,
+            players: [],
+            results: undefined
+        }]);
+    };
+
+    const removeGroup = (groupIndex: number) => {
+        if (groups.length > 1) {
+            setGroups(groups.filter((_, i) => i !== groupIndex));
+        }
+    };
+
+    const addPlayerToGroup = (groupIndex: number, player: Player) => {
+        const newGroups = [...groups];
+        if (!newGroups[groupIndex].players.find(p => p.id === player.id)) {
+            newGroups[groupIndex].players.push(player);
+            setGroups(newGroups);
+        }
+    };
+
+    const removePlayerFromGroup = (groupIndex: number, playerId: string) => {
+        const newGroups = [...groups];
+        newGroups[groupIndex].players = newGroups[groupIndex].players.filter(p => p.id !== playerId);
+        setGroups(newGroups);
+    };
+
+    const getAssignedPlayerIds = (): Set<string> => {
+        const assigned = new Set<string>();
+        groups.forEach(group => {
+            group.players.forEach(player => assigned.add(player.id));
+        });
+        return assigned;
+    };
+
+    const unassignedPlayers = presentPlayers.filter(p => !getAssignedPlayerIds().has(p.id));
+    const canSave = groups.every(g => g.players.length >= 2) && unassignedPlayers.length === 0;
+
+    return (
+        <div className="card fade-in">
+            <div className="card-header">
+                <h3 className="card-title">✏️ Manual Group Creation</h3>
+                <p className="text-muted" style={{ margin: 0, fontSize: '0.875rem' }}>
+                    Manually assign players to groups
+                </p>
+            </div>
+
+            <div style={{ display: 'grid', gap: 'var(--spacing-md)' }}>
+                {groups.map((group, groupIndex) => (
+                    <div
+                        key={group.id}
+                        style={{
+                            padding: 'var(--spacing-md)',
+                            background: 'var(--color-bg-secondary)',
+                            borderRadius: 'var(--radius-lg)',
+                            border: '2px solid var(--color-border-light)'
+                        }}
+                    >
+                        <div className="flex items-center justify-between mb-sm">
+                            <h5 style={{ fontSize: '0.875rem', fontWeight: 700, margin: 0, color: 'var(--color-accent-primary)' }}>
+                                GROUP {groupIndex + 1}
+                            </h5>
+                            <div style={{ display: 'flex', gap: 'var(--spacing-xs)' }}>
+                                <span className="badge badge-primary">
+                                    {group.players.length} players
+                                </span>
+                                {groups.length > 1 && (
+                                    <button
+                                        onClick={() => removeGroup(groupIndex)}
+                                        className="btn btn-secondary btn-sm"
+                                        style={{ padding: '2px 8px', fontSize: '0.75rem' }}
+                                    >
+                                        🗑️
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'grid', gap: 'var(--spacing-xs)', marginBottom: 'var(--spacing-sm)' }}>
+                            {group.players.map((player) => (
+                                <div
+                                    key={player.id}
+                                    style={{
+                                        padding: 'var(--spacing-sm)',
+                                        background: 'var(--color-bg-tertiary)',
+                                        borderRadius: 'var(--radius-md)',
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center'
+                                    }}
+                                >
+                                    <span style={{ fontSize: '0.875rem' }}>{player.name}</span>
+                                    <button
+                                        onClick={() => removePlayerFromGroup(groupIndex, player.id)}
+                                        className="btn btn-secondary btn-sm"
+                                        style={{ padding: '2px 8px', fontSize: '0.75rem' }}
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+
+                        {unassignedPlayers.length > 0 && (
+                            <select
+                                onChange={(e) => {
+                                    const player = presentPlayers.find(p => p.id === e.target.value);
+                                    if (player) {
+                                        addPlayerToGroup(groupIndex, player);
+                                        e.target.value = '';
+                                    }
+                                }}
+                                className="input"
+                                style={{ fontSize: '0.875rem' }}
+                                defaultValue=""
+                            >
+                                <option value="" disabled>+ Add player...</option>
+                                {unassignedPlayers.map(player => (
+                                    <option key={player.id} value={player.id}>
+                                        {player.name}
+                                    </option>
+                                ))}
+                            </select>
+                        )}
+                    </div>
+                ))}
+
+                <div style={{ display: 'flex', gap: 'var(--spacing-sm)' }}>
+                    <button
+                        onClick={addGroup}
+                        className="btn btn-secondary"
+                        style={{ flex: 1 }}
+                    >
+                        ➕ Add Group
+                    </button>
+                    <button
+                        onClick={() => onGroupsCreated(groups)}
+                        className="btn btn-primary"
+                        disabled={!canSave}
+                        style={{ flex: 2 }}
+                    >
+                        ✅ Save Groups
+                    </button>
+                </div>
+
+                {!canSave && (
+                    <div style={{
+                        padding: 'var(--spacing-sm)',
+                        background: 'var(--color-accent-warning)',
+                        color: 'white',
+                        borderRadius: 'var(--radius-md)',
+                        fontSize: '0.875rem',
+                        textAlign: 'center'
+                    }}>
+                        {unassignedPlayers.length > 0
+                            ? `⚠️ ${unassignedPlayers.length} player(s) not assigned`
+                            : '⚠️ Each group needs at least 2 players'}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
