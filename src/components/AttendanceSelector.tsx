@@ -113,7 +113,7 @@ export const AttendanceSelector: React.FC<AttendanceSelectorProps> = ({
                                     onChange={() => togglePlayer(player.id)}
                                     disabled={isDisabled}
                                 />
-                                <span style={{ fontWeight: 500, flex: 1 }}>{player.name}</span>
+                                <span style={{ fontWeight: 500, flex: 1 }}>{player.name} {player.emoji}</span>
                                 {hasPlayedToday && (
                                     <span className="badge badge-secondary" style={{ fontSize: '0.75rem' }}>
                                         ✅ {t('attendance.alreadyPlayed')}
