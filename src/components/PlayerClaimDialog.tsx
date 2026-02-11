@@ -25,7 +25,7 @@ export const PlayerClaimDialog: React.FC<PlayerClaimDialogProps> = ({
     };
 
     // Filter out players that are already claimed (have user_id)
-    const availablePlayers = players.filter(p => !(p as any).user_id);
+    const availablePlayers = players.filter(p => !p.userId);
 
     return (
         <div style={{

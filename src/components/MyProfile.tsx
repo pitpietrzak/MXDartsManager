@@ -1,7 +1,9 @@
-import React from 'react';
+import { useState, useEffect } from 'react';
+import EmojiPicker, { EmojiClickData, Theme } from 'emoji-picker-react';
 import { Player, MonthlyStats, DailyGame } from '../types/types';
 import { TodaysGames } from './TodaysGames';
 import { useLanguage } from '../contexts/LanguageContext';
+import { updatePlayer } from '../utils/supabaseStorage';
 
 interface MyProfileProps {
     player: Player;
@@ -21,6 +23,32 @@ export const MyProfile: React.FC<MyProfileProps> = ({
     onNavigateToResults
 }) => {
     const { t, language } = useLanguage();
+    const [isUpdating, setIsUpdating] = useState(false);
+    const [playerState, setPlayerState] = useState(player);
+    const [isEditingEmoji, setIsEditingEmoji] = useState(false);
+
+    useEffect(() => {
+        setPlayerState(player);
+    }, [player]);
+
+    const handleUpdateProfile = async (updates: Partial<Player>) => {
+        setIsUpdating(true);
+        const updatedPlayer = { ...playerState, ...updates };
+        setPlayerState(updatedPlayer); // Optimistic update
+
+        const success = await updatePlayer(updatedPlayer);
+        if (!success) {
+            setPlayerState(playerState); // Revert on failure
+            alert(t('common.error'));
+        }
+        setIsUpdating(false);
+    };
+
+    const handleEmojiClick = (emojiData: EmojiClickData) => {
+        handleUpdateProfile({ emoji: emojiData.emoji });
+        setIsEditingEmoji(false);
+    };
+
     const winRate = stats && stats.totalWins + stats.totalLosses > 0
         ? ((stats.totalWins / (stats.totalWins + stats.totalLosses)) * 100).toFixed(1)
         : '0.0';
@@ -34,19 +62,62 @@ export const MyProfile: React.FC<MyProfileProps> = ({
                 border: 'none'
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)' }}>
-                    <div style={{
-                        width: '80px',
-                        height: '80px',
-                        borderRadius: '50%',
-                        background: 'rgba(255, 255, 255, 0.2)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '2rem',
-                        fontWeight: 700
-                    }}>
-                        {player.name.charAt(0).toUpperCase()}
+                    <div
+                        onClick={() => setIsEditingEmoji(true)}
+                        style={{
+                            width: '80px',
+                            height: '80px',
+                            borderRadius: '50%',
+                            background: 'rgba(255, 255, 255, 0.2)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '2rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            position: 'relative',
+                            transition: 'transform 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                        title={t('profile.emoji')}
+                    >
+                        {playerState.emoji || player.name.charAt(0).toUpperCase()}
+                        <div style={{
+                            position: 'absolute',
+                            bottom: '0',
+                            right: '0',
+                            background: 'rgba(0,0,0,0.5)',
+                            borderRadius: '50%',
+                            padding: '4px',
+                            fontSize: '0.75rem'
+                        }}>✏️</div>
                     </div>
+                    {isEditingEmoji && (
+                        <div style={{
+                            position: 'fixed',
+                            top: 0,
+                            left: 0,
+                            width: '100vw',
+                            height: '100vh',
+                            background: 'rgba(0,0,0,0.5)',
+                            zIndex: 1000,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }} onClick={(e) => {
+                            e.stopPropagation();
+                            setIsEditingEmoji(false);
+                        }}>
+                            <div onClick={(e) => e.stopPropagation()}>
+                                <EmojiPicker
+                                    onEmojiClick={handleEmojiClick}
+                                    theme={window.matchMedia('(prefers-color-scheme: dark)').matches ? Theme.DARK : Theme.LIGHT}
+                                    autoFocusSearch={false}
+                                />
+                            </div>
+                        </div>
+                    )}
                     <div style={{ flex: 1 }}>
                         <h2 style={{ margin: 0, color: 'white', fontSize: '1.75rem' }}>
                             {player.name}
@@ -54,6 +125,45 @@ export const MyProfile: React.FC<MyProfileProps> = ({
                         <p style={{ margin: 'var(--spacing-xs) 0 0 0', opacity: 0.9 }}>
                             {t('profile.title')}
                         </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Profile Settings */}
+            <div className="card fade-in">
+                <div className="card-header">
+                    <h3 className="card-title">⚙️ {t('profile.settings')}</h3>
+                </div>
+                <div style={{ display: 'grid', gap: 'var(--spacing-md)' }}>
+                    {/* Playing Status Toggle */}
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: 'var(--spacing-md)',
+                        background: 'var(--color-bg-secondary)',
+                        borderRadius: 'var(--radius-md)'
+                    }}>
+                        <div>
+                            <div style={{ fontWeight: 600 }}>{t('profile.isPlayingToday')}</div>
+                            <div className="text-muted" style={{ fontSize: '0.875rem' }}>
+                                {playerState.isPlayingToday ? t('profile.setUnavailable') : t('profile.setAvailable')}
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)' }}>
+                            <label className="switch switch-sm">
+                                <input
+                                    type="checkbox"
+                                    checked={playerState.isPlayingToday !== false}
+                                    onChange={(e) => handleUpdateProfile({ isPlayingToday: e.target.checked })}
+                                    disabled={isUpdating}
+                                />
+                                <span className="slider round"></span>
+                            </label>
+                            <span style={{ fontSize: '1.5rem', transition: 'transform 0.2s' }}>
+                                {playerState.isPlayingToday !== false ? '😃' : '😞'}
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>

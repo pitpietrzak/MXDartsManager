@@ -163,7 +163,7 @@ export const GroupDrawer: React.FC<GroupDrawerProps> = ({
                                                 fontWeight: 500
                                             }}
                                         >
-                                            {playerIndex + 1}. {player.name}
+                                            {playerIndex + 1}. {player.name} {player.emoji}
                                         </div>
                                     ))}
                                 </div>

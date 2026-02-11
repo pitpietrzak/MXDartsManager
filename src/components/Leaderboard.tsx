@@ -1,14 +1,15 @@
 import React from 'react';
-import { MonthlyStats } from '../types/types';
+import { MonthlyStats, Player } from '../types/types';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface LeaderboardProps {
     stats: MonthlyStats[];
     currentMonth: string;
     currentPlayerId?: string;
+    players?: Player[]; // Optional for backward compatibility, but recommended
 }
 
-export const Leaderboard: React.FC<LeaderboardProps> = ({ stats, currentMonth, currentPlayerId }) => {
+export const Leaderboard: React.FC<LeaderboardProps> = ({ stats, currentMonth, currentPlayerId, players }) => {
     const { t, language } = useLanguage();
     const sortedStats = [...stats].sort((a, b) => b.rating - a.rating);
     const isCurrentMonth = currentMonth === new Date().toISOString().slice(0, 7);
@@ -114,7 +115,21 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ stats, currentMonth, c
                                                 {getRankEmoji(index + 1)}
                                             </td>
                                             <td style={{ padding: 'var(--spacing-md)', fontWeight: 600 }}>
-                                                {stat.playerName}
+                                                {stat.playerName} {players?.find(p => p.id === stat.playerId)?.emoji || ''}
+                                                {isCurrentPlayer && (
+                                                    <span style={{
+                                                        marginLeft: 'var(--spacing-sm)',
+                                                        fontSize: '0.65rem',
+                                                        padding: '2px 6px',
+                                                        background: 'var(--color-accent-primary)',
+                                                        color: 'white',
+                                                        borderRadius: 'var(--radius-sm)',
+                                                        textTransform: 'uppercase',
+                                                        verticalAlign: 'middle'
+                                                    }}>
+                                                        {t('game.itsYou')}
+                                                    </span>
+                                                )}
                                             </td>
                                             <td style={{ padding: 'var(--spacing-md)', textAlign: 'center', fontWeight: 700, color: 'var(--color-accent-primary)' }}>
                                                 {stat.rating.toFixed(3)}

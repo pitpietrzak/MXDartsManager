@@ -4,6 +4,9 @@ export interface Player {
   id: string;
   name: string;
   createdAt: string;
+  userId?: string; // Optional link to auth user
+  isPlayingToday?: boolean;
+  emoji?: string;
 }
 
 export interface GameResult {

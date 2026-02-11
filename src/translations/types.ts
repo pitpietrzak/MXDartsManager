@@ -144,7 +144,16 @@ export type TranslationKey =
     | 'common.game'
     | 'common.games'
     | 'manual.playersNotPresent'
-    | 'manual.duplicates';
+    | 'manual.duplicates'
+    | 'profile.settings'
+    | 'profile.isPlayingToday'
+    | 'profile.notPlayingToday'
+    | 'profile.emoji'
+    | 'profile.updated'
+    | 'profile.setAvailable'
+    | 'profile.setUnavailable'
+    | 'game.itsYou'
+    | 'common.total';
 
 export interface Translations {
     [key: string]: string;

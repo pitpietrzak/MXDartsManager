@@ -27,7 +27,8 @@ export function Login() {
                 setError('Account created! Please check your email to confirm (or login if email confirmation is disabled).');
                 setIsSignUp(false);
             }
-        } catch (err) {
+        } catch (err: unknown) {
+            console.error(err);
             setError('An unexpected error occurred');
         } finally {
             setLoading(false);

@@ -166,7 +166,7 @@ export const ResultsEntry: React.FC<ResultsEntryProps> = ({
                                             }}
                                         >
                                             <span style={{ fontWeight: 500, fontSize: '0.875rem' }}>
-                                                {player.name}
+                                                {player.name} {player.emoji}
                                             </span>
                                             <div className="flex gap-sm" style={{ flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                                                 {Array.from({ length: group.players.length }, (_, i) => i + 1).map((pos) => {

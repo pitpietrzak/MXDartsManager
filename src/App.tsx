@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Player, Group, DailyGame, MonthlyStats, GameResult } from './types/types';
 import { PlayerManagement } from './components/PlayerManagement';
 import { AttendanceSelector } from './components/AttendanceSelector';
@@ -24,7 +24,6 @@ import {
   deleteGame as dbDeleteGame,
   getTodaysGames,
   getCurrentMonth,
-  getPlayerByUserId,
   linkPlayerToUser,
   getUserGameHistory,
   saveGroupResults,
@@ -41,7 +40,13 @@ function App() {
   const { t } = useLanguage();
   const [players, setPlayers] = useState<Player[]>([]);
   const [games, setGames] = useState<DailyGame[]>([]);
-  const [stats, setStats] = useState<MonthlyStats[]>([]);
+
+  const stats = useMemo(() => {
+    if (games.length === 0) return [];
+    const calculatedStats = calculateStatsFromGames(games);
+    return calculateMonthlyRatings(calculatedStats);
+  }, [games]);
+
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [todaysGames, setTodaysGames] = useState<DailyGame[]>([]);
@@ -85,12 +90,13 @@ function App() {
         // Calculate stats client-side from completed games
         const calculatedStats = calculateStatsFromGames(loadedGames);
         const statsWithRatings = calculateMonthlyRatings(calculatedStats);
-        setStats(statsWithRatings);
 
         // Load user's player association if logged in
         if (user?.id) {
           console.log('Loading player for user:', user.id);
-          const player = await getPlayerByUserId(user.id);
+          // Find player in loaded players list to ensure we have latest data (including emoji)
+          // The RPC getPlayerByUserId might return stale data or missing columns
+          const player = loadedPlayers.find(p => p.userId === user.id) || null;
           console.log('User player loaded:', player);
           setUserPlayer(player);
 
@@ -120,17 +126,7 @@ function App() {
     loadData();
   }, [currentMonth, user]);
 
-  // Recalculate ratings when stats change
-  useEffect(() => {
-    // Re-calculate if games change
-    if (games.length > 0) {
-      const calculatedStats = calculateStatsFromGames(games);
-      const statsWithRatings = calculateMonthlyRatings(calculatedStats);
-      if (JSON.stringify(statsWithRatings) !== JSON.stringify(stats)) {
-        setStats(statsWithRatings);
-      }
-    }
-  }, [games]);
+
 
   // Reload data helper
   const reloadData = async () => {
@@ -147,12 +143,17 @@ function App() {
 
       const calculatedStats = calculateStatsFromGames(loadedGames);
       const statsWithRatings = calculateMonthlyRatings(calculatedStats);
-      setStats(statsWithRatings);
 
       // Update user stats if logged in
       if (userPlayer) {
         const playerStats = statsWithRatings.find(s => s.playerId === userPlayer.id) || null;
         setUserStats(playerStats);
+
+        // Update user player details
+        const updatedUserPlayer = loadedPlayers.find(p => p.id === userPlayer.id);
+        if (updatedUserPlayer) {
+          setUserPlayer(updatedUserPlayer);
+        }
 
         const history = await getUserGameHistory(userPlayer.id, currentMonth);
         setUserGameHistory(history);
@@ -161,6 +162,14 @@ function App() {
       console.error('Error reloading data:', error);
     }
   };
+
+  // Refresh data on view change
+  useEffect(() => {
+    if (!loading) {
+      reloadData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentView]);
 
   const handleAddPlayer = async (name: string) => {
     const newPlayer = await dbAddPlayer(name);
@@ -431,7 +440,7 @@ function App() {
             />
 
             {stats.length > 0 && (
-              <Leaderboard stats={stats} currentMonth={currentMonth} currentPlayerId={userPlayer?.id} />
+              <Leaderboard stats={stats} currentMonth={currentMonth} currentPlayerId={userPlayer?.id} players={players} />
             )}
           </div>
         )}
@@ -641,6 +650,7 @@ function App() {
               stats={stats}
               currentMonth={currentMonth}
               currentPlayerId={userPlayer?.id}
+              players={players}
             />
           )
         }
@@ -649,7 +659,7 @@ function App() {
           currentView === 'history' && (
             <GameHistory
               games={games}
-              currentMonth={currentMonth}
+              currentPlayerId={userPlayer?.id}
               role={role}
               onDelete={handleDeleteGame}
             />

@@ -48,7 +48,7 @@ export const TodaysGames: React.FC<TodaysGamesProps> = ({
                     <div>
                         <h3 className="card-title">{t('game.todaysGames')}</h3>
                         <p className="text-muted" style={{ margin: 0, fontSize: '0.875rem' }}>
-                            {games.length} {games.length === 1 ? t('common.game') : t('common.games')} {t('game.scheduled')} ({allGroups.length} {t('common.groups')} total)
+                            {games.length} {games.length === 1 ? t('common.game') : t('common.games')} {t('game.scheduled')} ({allGroups.length} {t('common.groups')} {t('common.total')})
                         </p>
                     </div>
                     {(role === 'admin' || role === 'game_manager') && onNavigateToResults && (
@@ -126,7 +126,7 @@ export const TodaysGames: React.FC<TodaysGamesProps> = ({
                                                 color: isUserGroup ? 'white' : 'var(--color-text-primary)'
                                             }}
                                         >
-                                            {isCurrentUser ? '👤 ' : '• '}{player.name}
+                                            {isCurrentUser ? '👤 ' : '• '}{player.name}{player.emoji ? ' ' + player.emoji : ''}
                                             {isCurrentUser && ` ${t('game.you')}`}
                                         </div>
                                     );

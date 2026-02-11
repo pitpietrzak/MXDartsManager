@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -16,13 +16,9 @@ export function RoleManager() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        if (currentUserRole === 'admin') {
-            loadUsers();
-        }
-    }, [currentUserRole]);
 
-    const loadUsers = async () => {
+
+    const loadUsers = useCallback(async () => {
         try {
             setLoading(true);
             setError(null);
@@ -48,7 +44,13 @@ export function RoleManager() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [t]);
+
+    useEffect(() => {
+        if (currentUserRole === 'admin') {
+            loadUsers();
+        }
+    }, [currentUserRole, loadUsers]);
 
     const updateRole = async (userId: string, newRole: 'admin' | 'game_manager' | 'user') => {
         try {

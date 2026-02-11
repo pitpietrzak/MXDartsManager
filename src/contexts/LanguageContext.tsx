@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useContext, useState, ReactNode } from 'react';
 import { en } from '../translations/en';
 import { pl } from '../translations/pl';
 import { Translations, TranslationKey } from '../translations/types';
@@ -14,14 +15,10 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-    const [language, setLanguageState] = useState<Language>('en');
-
-    useEffect(() => {
+    const [language, setLanguageState] = useState<Language>(() => {
         const savedLanguage = localStorage.getItem('language') as Language;
-        if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'pl')) {
-            setLanguageState(savedLanguage);
-        }
-    }, []);
+        return (savedLanguage === 'en' || savedLanguage === 'pl') ? savedLanguage : 'en';
+    });
 
     const setLanguage = (lang: Language) => {
         setLanguageState(lang);

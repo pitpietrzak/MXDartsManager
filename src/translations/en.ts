@@ -90,6 +90,7 @@ export const en: Translations = {
     'game.scheduled': 'scheduled',
     'game.yourGroup': '⭐ Your Group',
     'game.you': '(You)',
+    'game.itsYou': "It's You",
     'game.group': 'Group',
     'players.description': 'Add/remove players and assign them to user accounts',
     'players.allPlayers': 'All Players',
@@ -107,7 +108,7 @@ export const en: Translations = {
     'attendance.selectAll': 'Select All Available',
     'attendance.clearAll': 'Clear All',
     'attendance.noPlayers': 'No players available. Add players first!',
-    'attendance.alreadyPlayed': '✓ Already played',
+    'attendance.alreadyPlayed': 'Already played',
     'attendance.minPlayers': '⚠️ Need at least 2 players to start a game',
     'groups.description': 'Randomly generate groups from selected players',
     'groups.count': 'Number of Groups',
@@ -146,5 +147,13 @@ export const en: Translations = {
     'common.game': 'Game',
     'common.games': 'Games',
     'manual.playersNotPresent': 'player(s) are in groups but not marked as present',
-    'manual.duplicates': 'Some players are assigned to multiple groups!'
+    'manual.duplicates': 'Some players are assigned to multiple groups!',
+    'profile.settings': 'Player Settings',
+    'profile.isPlayingToday': 'I play today',
+    'profile.notPlayingToday': 'I do not play today',
+    'profile.emoji': 'Your Emoji',
+    'profile.updated': 'Profile updated',
+    'profile.setAvailable': 'Click to set yourself as available for today\'s draw',
+    'profile.setUnavailable': 'Click to set yourself as unavailable for today\'s draw',
+    'common.total': 'total'
 };

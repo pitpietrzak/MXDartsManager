@@ -4,12 +4,12 @@ import { useLanguage } from '../contexts/LanguageContext';
 
 interface GameHistoryProps {
     games: DailyGame[];
-    currentMonth: string;
+    currentPlayerId?: string;
     role: 'admin' | 'game_manager' | 'user' | null;
     onDelete?: (gameId: string) => Promise<void>;
 }
 
-export const GameHistory: React.FC<GameHistoryProps> = ({ games, role, onDelete }) => {
+export const GameHistory: React.FC<GameHistoryProps> = ({ games, currentPlayerId, role, onDelete }) => {
     const { t, language } = useLanguage();
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const formatDate = (dateStr: string) => {
@@ -146,7 +146,17 @@ export const GameHistory: React.FC<GameHistoryProps> = ({ games, role, onDelete 
                                                                             else emoji = `${result.position}.`;
                                                                             return (
                                                                                 <div key={result.playerId} style={{ padding: 'var(--spacing-xs) 0' }}>
-                                                                                    {emoji} {player?.name}: <span style={{ color: 'var(--color-text-muted)' }}>{result.wins}-{result.losses}</span>
+                                                                                    {emoji} <span style={{
+                                                                                        fontWeight: player?.id === currentPlayerId ? 700 : 400,
+                                                                                        color: player?.id === currentPlayerId ? 'var(--color-accent-primary)' : 'inherit'
+                                                                                    }}>
+                                                                                        {player?.name}
+                                                                                    </span>: <span style={{
+                                                                                        fontWeight: player?.id === currentPlayerId ? 700 : 400,
+                                                                                        color: player?.id === currentPlayerId ? 'var(--color-accent-primary)' : 'var(--color-text-muted)'
+                                                                                    }}>
+                                                                                        {result.wins}-{result.losses}
+                                                                                    </span>
                                                                                 </div>
                                                                             );
                                                                         })}

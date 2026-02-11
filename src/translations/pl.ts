@@ -90,6 +90,7 @@ export const pl: Translations = {
     'game.scheduled': 'zaplanowane',
     'game.yourGroup': '⭐ Twoja Grupa',
     'game.you': '(Ty)',
+    'game.itsYou': 'To Ty',
     'game.group': 'Grupa',
     'players.description': 'Dodawaj/usuwaj graczy i przypisuj ich do kont użytkowników',
     'players.allPlayers': 'Wszyscy Gracze',
@@ -107,7 +108,7 @@ export const pl: Translations = {
     'attendance.selectAll': 'Zaznacz wszystkich',
     'attendance.clearAll': 'Wyczyść',
     'attendance.noPlayers': 'Brak dostępnych graczy. Dodaj graczy najpierw!',
-    'attendance.alreadyPlayed': '✓ Już grał',
+    'attendance.alreadyPlayed': 'Już grał',
     'attendance.minPlayers': '⚠️ Potrzebujesz conajmniej 2 graczy aby rozpocząć grę',
     'groups.description': 'Losowo generuj grupy z wybranych graczy',
     'groups.count': 'Liczba Grup',
@@ -146,5 +147,13 @@ export const pl: Translations = {
     'common.game': 'Gra',
     'common.games': 'Gry',
     'manual.playersNotPresent': 'graczy jest w grupach, ale nie są zaznaczeni jako obecni',
-    'manual.duplicates': 'Niektórzy gracze są przypisani do wielu grup!'
+    'manual.duplicates': 'Niektórzy gracze są przypisani do wielu grup!',
+    'profile.settings': 'Ustawienia Gracza',
+    'profile.isPlayingToday': 'Gram dzisiaj',
+    'profile.notPlayingToday': 'Nie gram dzisiaj',
+    'profile.emoji': 'Twój Emoji',
+    'profile.updated': 'Profil zaktualizowany',
+    'profile.setAvailable': 'Kliknij, aby zaznaczyć dostępność do dzisiejszego losowania',
+    'profile.setUnavailable': 'Kliknij, aby wyłączyć dostępność w dzisiejszym losowaniu',
+    'common.total': 'łącznie'
 };

@@ -59,7 +59,9 @@ export async function loadPlayers(): Promise<Player[]> {
         id: p.id,
         name: p.name,
         createdAt: p.created_at,
-        ...(p.user_id && { user_id: p.user_id }) // Include user_id if present
+        ...(p.user_id && { userId: p.user_id }), // Include user_id if present
+        isPlayingToday: p.is_playing_today ?? true,
+        emoji: p.emoji
     }));
 }
 
@@ -96,6 +98,28 @@ export async function removePlayer(id: string): Promise<boolean> {
 
     if (error) {
         console.error('Error removing player:', error);
+        return false;
+    }
+
+    return true;
+}
+
+
+/**
+ * Update a player's profile
+ */
+export async function updatePlayer(player: Player): Promise<boolean> {
+    const { error } = await supabase
+        .from('players')
+        .update({
+            name: player.name,
+            is_playing_today: player.isPlayingToday,
+            emoji: player.emoji
+        })
+        .eq('id', player.id);
+
+    if (error) {
+        console.error('Error updating player:', error);
         return false;
     }
 
@@ -190,14 +214,14 @@ export async function loadMonthGames(month: string): Promise<DailyGame[]> {
     // First, get all players for lookup
     const { data: allPlayers, error: playersError } = await supabase
         .from('players')
-        .select('id, name');
+        .select('id, name, emoji');
 
     if (playersError) {
         console.error('Error loading players:', playersError);
         return [];
     }
 
-    const playerMap = new Map(allPlayers.map((p) => [p.id, p.name]));
+    const playerMap = new Map(allPlayers.map((p) => [p.id, { name: p.name, emoji: p.emoji }]));
 
     const { data: games, error: gamesError } = await supabase
         .from('games')
@@ -232,11 +256,15 @@ export async function loadMonthGames(month: string): Promise<DailyGame[]> {
             .map((group) => {
                 // Get unique player IDs from results
                 const playerIds = group.game_results.map((r) => r.player_id);
-                const players = playerIds.map((id: string) => ({
-                    id,
-                    name: playerMap.get(id) || 'Unknown Player',
-                    createdAt: ''
-                }));
+                const players = playerIds.map((id: string) => {
+                    const playerData = playerMap.get(id);
+                    return {
+                        id,
+                        name: playerData?.name || 'Unknown Player',
+                        emoji: playerData?.emoji,
+                        createdAt: ''
+                    };
+                });
 
                 return {
                     id: group.id,
@@ -667,14 +695,14 @@ export async function getTodaysGames(): Promise<DailyGame[]> {
     // First, get all players for lookup
     const { data: allPlayers, error: playersError } = await supabase
         .from('players')
-        .select('id, name');
+        .select('id, name, emoji');
 
     if (playersError) {
         console.error('Error loading players:', playersError);
         return [];
     }
 
-    const playerMap = new Map(allPlayers.map(p => [p.id, p.name]));
+    const playerMap = new Map(allPlayers.map(p => [p.id, { name: p.name, emoji: p.emoji }]));
 
     const { data: games, error: gamesError } = await supabase
         .from('games')
@@ -713,11 +741,15 @@ export async function getTodaysGames(): Promise<DailyGame[]> {
             .map((group) => {
                 // Get unique player IDs from results
                 const playerIds = group.game_results.map((r) => r.player_id);
-                const players = playerIds.map((id: string) => ({
-                    id,
-                    name: playerMap.get(id) || 'Unknown Player',
-                    createdAt: ''
-                }));
+                const players = playerIds.map((id: string) => {
+                    const playerData = playerMap.get(id);
+                    return {
+                        id,
+                        name: playerData?.name || 'Unknown Player',
+                        emoji: playerData?.emoji,
+                        createdAt: ''
+                    };
+                });
 
                 return {
                     id: group.id,

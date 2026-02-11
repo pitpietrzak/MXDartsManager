@@ -42,18 +42,6 @@ export const PlayerManagement: React.FC<PlayerManagementProps> = ({
         loadUsers();
     }, []);
 
-    // Load existing player-user associations
-    useEffect(() => {
-        const associations: { [playerId: string]: string } = {};
-        players.forEach(player => {
-            const playerWithUser = player as any;
-            if (playerWithUser.user_id) {
-                associations[player.id] = playerWithUser.user_id;
-            }
-        });
-        setSelectedUserId(associations);
-    }, [players]);
-
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -142,8 +130,7 @@ export const PlayerManagement: React.FC<PlayerManagementProps> = ({
                 ) : (
                     <div style={{ display: 'grid', gap: 'var(--spacing-sm)' }}>
                         {players.map((player) => {
-                            const playerWithUser = player as any;
-                            const linkedUserId = playerWithUser.user_id;
+                            const linkedUserId = player.userId;
 
                             return (
                                 <div
@@ -200,8 +187,7 @@ export const PlayerManagement: React.FC<PlayerManagementProps> = ({
                                                         .filter(user => {
                                                             // Only show users who are not already linked to any player
                                                             const isAlreadyLinked = players.some(p => {
-                                                                const pWithUser = p as any;
-                                                                return pWithUser.user_id === user.user_id;
+                                                                return p.userId === user.user_id;
                                                             });
                                                             return !isAlreadyLinked;
                                                         })
