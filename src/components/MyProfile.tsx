@@ -275,10 +275,10 @@ export const MyProfile: React.FC<MyProfileProps> = ({
                                     key={game.id}
                                     style={{
                                         padding: 'var(--spacing-md)',
-                                        background: isWinner ? 'var(--color-accent-success)' : 'var(--color-bg-secondary)',
+                                        background: isWinner ? 'rgba(34, 197, 94, 0.05)' : 'var(--color-bg-secondary)',
                                         borderRadius: 'var(--radius-md)',
                                         border: isWinner ? '2px solid var(--color-accent-success)' : '1px solid var(--color-border-light)',
-                                        color: isWinner ? 'white' : 'inherit'
+                                        color: 'inherit'
                                     }}
                                 >
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-sm)' }}>
@@ -291,7 +291,7 @@ export const MyProfile: React.FC<MyProfileProps> = ({
                                         </div>
                                         <div style={{
                                             padding: '2px 8px',
-                                            background: isWinner ? 'rgba(255, 255, 255, 0.3)' : 'var(--color-accent-primary)',
+                                            background: isWinner ? 'var(--color-accent-success)' : 'var(--color-accent-primary)',
                                             color: 'white',
                                             borderRadius: 'var(--radius-sm)',
                                             fontSize: '0.75rem',

@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
+import { PasswordReset } from './components/PasswordReset';
+import { supabase } from './lib/supabase';
 import { Player, Group, DailyGame, MonthlyStats, GameResult } from './types/types';
 import { PlayerManagement } from './components/PlayerManagement';
 import { AttendanceSelector } from './components/AttendanceSelector';
@@ -38,8 +40,20 @@ type View = 'dashboard' | 'players' | 'newGame' | 'leaderboard' | 'history' | 'm
 function App() {
   const { user, role, loading: authLoading } = useAuth();
   const { t } = useLanguage();
+  const [isPasswordReset, setIsPasswordReset] = useState(false);
   const [players, setPlayers] = useState<Player[]>([]);
   const [games, setGames] = useState<DailyGame[]>([]);
+
+  // Listen for password recovery event
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsPasswordReset(true);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const stats = useMemo(() => {
     if (games.length === 0) return [];
@@ -283,6 +297,11 @@ function App() {
     );
   }
 
+  // Show password reset if applicable
+  if (isPasswordReset) {
+    return <PasswordReset />;
+  }
+
   // Show login if not authenticated
   if (!user) {
     return <Login />;
@@ -418,7 +437,7 @@ function App() {
 
             <TodaysGames
               games={todaysGames}
-              currentUserId={user?.id || null}
+              currentUserId={userPlayer?.id || null}
               role={role}
               onNavigateToResults={() => {
                 // Load the existing games groups into state
@@ -548,6 +567,7 @@ function App() {
                       presentPlayers={presentPlayers}
                       groups={drawnGroups}
                       onGroupsGenerated={handleGroupsGenerated}
+                      currentUserId={userPlayer?.id}
                     />
                   )}
                 </>
@@ -637,6 +657,7 @@ function App() {
                     groups={drawnGroups}
                     onResultsSubmit={handleResultsSubmit}
                     onGroupSubmit={handleGroupResultSubmit}
+                    currentUserId={userPlayer?.id}
                   />
                 </>
               )}

@@ -77,7 +77,7 @@ export const TodaysGames: React.FC<TodaysGamesProps> = ({
                             key={group.id}
                             style={{
                                 padding: 'var(--spacing-md)',
-                                background: isUserGroup ? 'var(--color-accent-success)' : 'var(--color-bg-tertiary)',
+                                background: isUserGroup ? 'rgba(34, 197, 94, 0.05)' : 'var(--color-bg-tertiary)',
                                 borderRadius: 'var(--radius-md)',
                                 border: isUserGroup ? '2px solid var(--color-accent-success)' : '1px solid var(--color-border-light)',
                                 position: 'relative'
@@ -93,7 +93,7 @@ export const TodaysGames: React.FC<TodaysGamesProps> = ({
                                     margin: 0,
                                     fontSize: '1rem',
                                     fontWeight: 600,
-                                    color: isUserGroup ? 'white' : 'var(--color-text-primary)'
+                                    color: 'var(--color-text-primary)'
                                 }}>
                                     {t('game.group')} {index + 1}
                                 </h4>
@@ -101,8 +101,8 @@ export const TodaysGames: React.FC<TodaysGamesProps> = ({
                                     <span style={{
                                         fontSize: '0.75rem',
                                         padding: '2px 8px',
-                                        background: 'white',
-                                        color: 'var(--color-accent-success)',
+                                        background: 'var(--color-accent-success)',
+                                        color: 'white',
                                         borderRadius: 'var(--radius-sm)',
                                         fontWeight: 600
                                     }}>
@@ -118,16 +118,26 @@ export const TodaysGames: React.FC<TodaysGamesProps> = ({
                                         <div
                                             key={player.id}
                                             style={{
-                                                padding: 'var(--spacing-xs)',
-                                                background: isUserGroup ? 'rgba(255, 255, 255, 0.2)' : 'var(--color-bg-secondary)',
-                                                borderRadius: 'var(--radius-sm)',
                                                 fontSize: '0.875rem',
-                                                fontWeight: isCurrentUser ? 600 : 400,
-                                                color: isUserGroup ? 'white' : 'var(--color-text-primary)'
+                                                fontWeight: isCurrentUser ? 700 : 500,
+                                                color: 'var(--color-text-primary)'
                                             }}
                                         >
-                                            {isCurrentUser ? '👤 ' : '• '}{player.name}{player.emoji ? ' ' + player.emoji : ''}
-                                            {isCurrentUser && ` ${t('game.you')}`}
+                                            {'• '}{player.name}{player.emoji ? ' ' + player.emoji : ''}
+                                            {isCurrentUser && (
+                                                <span style={{
+                                                    marginLeft: 'var(--spacing-sm)',
+                                                    fontSize: '0.65rem',
+                                                    padding: '2px 6px',
+                                                    background: 'var(--color-accent-primary)',
+                                                    color: 'white',
+                                                    borderRadius: 'var(--radius-sm)',
+                                                    textTransform: 'uppercase',
+                                                    verticalAlign: 'middle'
+                                                }}>
+                                                    {t('game.itsYou')}
+                                                </span>
+                                            )}
                                         </div>
                                     );
                                 })}

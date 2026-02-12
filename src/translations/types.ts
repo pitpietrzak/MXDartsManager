@@ -11,6 +11,7 @@ export type TranslationKey =
     | 'auth.signUp'
     | 'auth.email'
     | 'auth.password'
+    | 'auth.passwordsDoNotMatch'
     | 'auth.signInButton'
     | 'auth.signUpButton'
     | 'auth.haveAccount'

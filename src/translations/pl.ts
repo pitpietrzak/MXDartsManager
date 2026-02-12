@@ -13,6 +13,7 @@ export const pl: Translations = {
     'auth.signUp': 'Zarejestruj się',
     'auth.email': 'Email',
     'auth.password': 'Hasło',
+    'auth.passwordsDoNotMatch': 'Hasła nie są identyczne',
     'auth.signInButton': 'Zaloguj się',
     'auth.signUpButton': 'Zarejestruj się',
     'auth.haveAccount': 'Masz już konto? Zaloguj się',
