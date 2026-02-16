@@ -149,6 +149,7 @@ export const pl: Translations = {
     'common.games': 'Gry',
     'manual.playersNotPresent': 'graczy jest w grupach, ale nie są zaznaczeni jako obecni',
     'manual.duplicates': 'Niektórzy gracze są przypisani do wielu grup!',
+    'manual.fixErrors': 'Popraw wszystkie błędy przed zapisaniem grup!',
     'profile.settings': 'Ustawienia Gracza',
     'profile.isPlayingToday': 'Gram dzisiaj',
     'profile.notPlayingToday': 'Nie gram dzisiaj',

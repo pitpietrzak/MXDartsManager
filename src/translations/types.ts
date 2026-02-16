@@ -146,6 +146,7 @@ export type TranslationKey =
     | 'common.games'
     | 'manual.playersNotPresent'
     | 'manual.duplicates'
+    | 'manual.fixErrors'
     | 'profile.settings'
     | 'profile.isPlayingToday'
     | 'profile.notPlayingToday'

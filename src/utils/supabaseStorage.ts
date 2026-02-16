@@ -290,34 +290,37 @@ export async function loadMonthGames(month: string): Promise<DailyGame[]> {
 /**
  * Save incomplete games with groups (no results yet)
  * This allows groups to be visible in Today's Games section
- * Each group is saved as a separate game
+ * All groups are saved under a SINGLE game record for the day.
  */
 export async function saveIncompleteGame(
     date: string,
     month: string,
     groups: Group[]
-): Promise<string[]> {
-    const gameIds: string[] = [];
+): Promise<string | null> {
+    if (groups.length === 0) return null;
 
-    for (const group of groups) {
-        // 1. Insert game as incomplete
-        const { data: gameData, error: gameError } = await supabase
-            .from('games')
-            .insert({ date, month, completed: false })
-            .select()
-            .single();
+    // 1. Insert game as incomplete
+    const { data: gameData, error: gameError } = await supabase
+        .from('games')
+        .insert({ date, month, completed: false })
+        .select()
+        .single();
 
-        if (gameError || !gameData) {
-            console.error('Error saving incomplete game:', gameError);
-            continue;
-        }
+    if (gameError || !gameData) {
+        console.error('Error saving incomplete game:', gameError);
+        return null;
+    }
 
-        gameIds.push(gameData.id);
+    const gameId = gameData.id;
 
-        // 2. Insert group (always index 0 since it's a single-group game)
+    // 2. Insert all groups linked to this game
+    for (let i = 0; i < groups.length; i++) {
+        const group = groups[i];
+
+        // Insert group with correct index
         const { data: groupData, error: groupError } = await supabase
             .from('game_groups')
-            .insert({ game_id: gameData.id, group_index: 0 })
+            .insert({ game_id: gameId, group_index: i })
             .select()
             .single();
 
@@ -326,7 +329,7 @@ export async function saveIncompleteGame(
             continue;
         }
 
-        // 3. Insert placeholder results for each player
+        // 3. Insert placeholder results for each player in this group
         const results = group.players.map((player) => ({
             group_id: groupData.id,
             player_id: player.id,
@@ -344,7 +347,7 @@ export async function saveIncompleteGame(
         }
     }
 
-    return gameIds;
+    return gameId;
 }
 
 /**
@@ -386,7 +389,7 @@ export async function updateDailyGroups(
         }
     }
 
-    // 3. Create new games from the groups
+    // 3. Create new game with all groups
     if (groups.length > 0) {
         await saveIncompleteGame(date, month, groups);
     }
@@ -687,10 +690,10 @@ export async function deleteGame(gameId: string): Promise<boolean> {
 }
 
 /**
- * Get today's incomplete games
+ * Get incomplete games for a specific date (defaults to today)
  */
-export async function getTodaysGames(): Promise<DailyGame[]> {
-    const today = new Date().toISOString().split('T')[0];
+export async function getDailyGames(date?: string): Promise<DailyGame[]> {
+    const targetDate = date || new Date().toISOString().split('T')[0];
 
     // First, get all players for lookup
     const { data: allPlayers, error: playersError } = await supabase
@@ -719,12 +722,12 @@ export async function getTodaysGames(): Promise<DailyGame[]> {
         )
       )
     `)
-        .eq('date', today)
+        .eq('date', targetDate)
         .eq('completed', false)
         .order('created_at', { ascending: false });
 
     if (gamesError) {
-        console.error('Error loading today\'s games:', gamesError);
+        console.error(`Error loading games for ${targetDate}:`, gamesError);
         return [];
     }
 

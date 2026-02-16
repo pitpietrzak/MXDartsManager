@@ -24,7 +24,7 @@ import {
   loadMonthGames,
   saveIncompleteGame as dbSaveIncompleteGame,
   deleteGame as dbDeleteGame,
-  getTodaysGames,
+  getDailyGames,
   getCurrentMonth,
   linkPlayerToUser,
   getUserGameHistory,
@@ -94,7 +94,7 @@ function App() {
         const [loadedPlayers, loadedGames, loadedTodaysGames] = await Promise.all([
           loadPlayers(),
           loadMonthGames(currentMonth),
-          getTodaysGames()
+          getDailyGames()
         ]);
 
         setPlayers(loadedPlayers);
@@ -148,7 +148,7 @@ function App() {
       const [loadedPlayers, loadedGames, loadedTodaysGames] = await Promise.all([
         loadPlayers(),
         loadMonthGames(currentMonth),
-        getTodaysGames()
+        getDailyGames()
       ]);
 
       setPlayers(loadedPlayers);
@@ -233,22 +233,35 @@ function App() {
   };
 
   const handleGroupsGenerated = async (groups: Group[]) => {
-    // Save incomplete game to database so it appears in Today's Games
-    // This generates real UUIDs for the groups
-    const gameIds = await dbSaveIncompleteGame(selectedDate, currentMonth, groups);
+    // Update daily groups (replaces existing incomplete games for this date)
+    // This prevents duplicates if the user clicks save multiple times or edits
+    const success = await updateDailyGroups(selectedDate, currentMonth, groups);
 
-    if (gameIds && gameIds.length > 0) {
-      await reloadData(); // Reload to show in Today's Games
+    if (success) {
+      await reloadData(); // Update everything
 
-      // Fetch fresh data to get the real UUIDs
-      const freshGames = await getTodaysGames();
+      // Fetch fresh data for the SELECTED date to get the real UUIDs
+      const freshGames = await getDailyGames(selectedDate);
       if (freshGames.length > 0) {
-        setTodaysGames(freshGames); // Ensure state is largely consistent
+        // If we really are on today's date, update todaysGames too
+        if (selectedDate === new Date().toISOString().split('T')[0]) {
+          setTodaysGames(freshGames);
+        }
+
         const allGroups = freshGames.flatMap(g => g.groups);
         setDrawnGroups(allGroups);
       }
+    } else {
+      alert('Failed to save groups');
     }
   };
+
+
+
+
+  // ... (unchanged code) ...
+
+
 
   const handleResultsSubmit = async (groupsWithResults: Group[]) => {
     console.log('handleResultsSubmit - Starting with groups:', groupsWithResults);
@@ -491,6 +504,23 @@ function App() {
                         const newDate = e.target.value;
                         if (!isWeekend(newDate)) {
                           setSelectedDate(newDate);
+
+                          // Reset state when date changes
+                          if (newDate === new Date().toISOString().split('T')[0]) {
+                            // If switching back to today, reload today's games
+                            if (todaysGames.length > 0) {
+                              const allGroups = todaysGames.flatMap(g => g.groups);
+                              setDrawnGroups(allGroups);
+                              const playerIds = allGroups.flatMap(g => g.players.map(p => p.id));
+                              setSelectedPlayerIds(playerIds);
+                            }
+                          } else {
+                            // If switching to a past date, clear current groups to allow new entry
+                            setDrawnGroups([]);
+                            setSelectedPlayerIds([]);
+                            // We could also check for incomplete games on this past date here,
+                            // but for now, we assume the user wants to enter new data.
+                          }
                         } else {
                           alert('Cannot select weekend dates. Games are only allowed on weekdays.');
                         }
@@ -627,9 +657,11 @@ function App() {
                         setIsEditingGroups(false);
 
                         // Refresh local state
-                        const freshGames = await getTodaysGames();
+                        const freshGames = await getDailyGames(selectedDate);
                         if (freshGames.length > 0) {
-                          setTodaysGames(freshGames);
+                          if (selectedDate === new Date().toISOString().split('T')[0]) {
+                            setTodaysGames(freshGames);
+                          }
                           setDrawnGroups(freshGames.flatMap(g => g.groups));
                         }
                       } else {

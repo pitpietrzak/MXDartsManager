@@ -149,6 +149,7 @@ export const en: Translations = {
     'common.games': 'Games',
     'manual.playersNotPresent': 'player(s) are in groups but not marked as present',
     'manual.duplicates': 'Some players are assigned to multiple groups!',
+    'manual.fixErrors': 'Before save you need to fix all issues!',
     'profile.settings': 'Player Settings',
     'profile.isPlayingToday': 'I play today',
     'profile.notPlayingToday': 'I do not play today',

@@ -92,8 +92,7 @@ export const ManualGroupCreator: React.FC<ManualGroupCreatorProps> = ({
     const validGroups = groups.filter(g => g.players.length > 0);
     const hasDuplicates = playersInGroups.length !== uniquePlayersInGroups.size;
 
-    const canSave = unassignedPlayers.length === 0 &&
-        validGroups.length > 0 &&
+    const canSave = validGroups.length > 0 &&
         validGroups.every(g => g.players.length >= 2) &&
         !hasDuplicates &&
         invalidPlayers.length === 0;
@@ -209,10 +208,25 @@ export const ManualGroupCreator: React.FC<ManualGroupCreatorProps> = ({
                     </button>
                 </div>
 
-                {!canSave && (
+                {/* Warning for unassigned players (non-blocking) */}
+                {unassignedPlayers.length > 0 && (
                     <div style={{
                         padding: 'var(--spacing-sm)',
                         background: 'var(--color-accent-warning)',
+                        color: 'white',
+                        borderRadius: 'var(--radius-md)',
+                        fontSize: '0.875rem',
+                        textAlign: 'center'
+                    }}>
+                        <div>{`⚠️ ${unassignedPlayers.length} ${t('manual.unassigned')}`}</div>
+                    </div>
+                )}
+
+                {/* Blocking errors */}
+                {!canSave && (
+                    <div style={{
+                        padding: 'var(--spacing-sm)',
+                        background: 'var(--color-accent-danger)',
                         color: 'white',
                         borderRadius: 'var(--radius-md)',
                         fontSize: '0.875rem',
@@ -221,9 +235,6 @@ export const ManualGroupCreator: React.FC<ManualGroupCreatorProps> = ({
                         flexDirection: 'column',
                         gap: '4px'
                     }}>
-                        {unassignedPlayers.length > 0 && (
-                            <div>{`⚠️ ${unassignedPlayers.length} ${t('manual.unassigned')}`}</div>
-                        )}
                         {validGroups.some(g => g.players.length < 2) && (
                             <div>{t('manual.minPlayers')}</div>
                         )}
@@ -232,6 +243,9 @@ export const ManualGroupCreator: React.FC<ManualGroupCreatorProps> = ({
                         )}
                         {invalidPlayers.length > 0 && (
                             <div>{`⚠️ ${invalidPlayers.length} ${t('manual.playersNotPresent')}`}</div>
+                        )}
+                        {!canSave && (
+                            <div>{`⚠️${t('manual.fixErrors')}`}</div>
                         )}
                     </div>
                 )}
