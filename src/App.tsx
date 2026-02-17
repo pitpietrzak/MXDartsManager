@@ -417,7 +417,7 @@ function App() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--spacing-md)' }}>
                 <div style={{ padding: 'var(--spacing-lg)', background: 'var(--color-bg-secondary)', borderRadius: 'var(--radius-lg)', textAlign: 'center' }}>
                   <div style={{ fontSize: '2rem', marginBottom: 'var(--spacing-sm)' }}>👥</div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-accent-primary)' }}>{players.length}</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-accent-primary)' }}>{stats.length}</div>
                   <div className="text-muted" style={{ fontSize: '0.875rem' }}>{t('dashboard.totalPlayers')}</div>
                 </div>
 

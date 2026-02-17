@@ -240,7 +240,8 @@ export async function loadMonthGames(month: string): Promise<DailyGame[]> {
     `)
         .eq('month', month)
         .eq('completed', true)
-        .order('date', { ascending: false });
+        .order('date', { ascending: false })
+        .order('created_at', { ascending: true });
 
     if (gamesError) {
         console.error('Error loading games:', gamesError);
@@ -289,8 +290,7 @@ export async function loadMonthGames(month: string): Promise<DailyGame[]> {
 
 /**
  * Save incomplete games with groups (no results yet)
- * This allows groups to be visible in Today's Games section
- * All groups are saved under a SINGLE game record for the day.
+ * Each group is saved as a SEPARATE game record.
  */
 export async function saveIncompleteGame(
     date: string,
@@ -299,28 +299,29 @@ export async function saveIncompleteGame(
 ): Promise<string | null> {
     if (groups.length === 0) return null;
 
-    // 1. Insert game as incomplete
-    const { data: gameData, error: gameError } = await supabase
-        .from('games')
-        .insert({ date, month, completed: false })
-        .select()
-        .single();
+    let lastGameId = null;
 
-    if (gameError || !gameData) {
-        console.error('Error saving incomplete game:', gameError);
-        return null;
-    }
-
-    const gameId = gameData.id;
-
-    // 2. Insert all groups linked to this game
     for (let i = 0; i < groups.length; i++) {
         const group = groups[i];
 
-        // Insert group with correct index
+        // 1. Insert NEW game for THIS group
+        const { data: gameData, error: gameError } = await supabase
+            .from('games')
+            .insert({ date, month, completed: false })
+            .select()
+            .single();
+
+        if (gameError || !gameData) {
+            console.error('Error saving game for group index', i, gameError);
+            continue;
+        }
+
+        lastGameId = gameData.id;
+
+        // 2. Insert group linked to this new game
         const { data: groupData, error: groupError } = await supabase
             .from('game_groups')
-            .insert({ game_id: gameId, group_index: i + 1 })
+            .insert({ game_id: gameData.id, group_index: i + 1 })
             .select()
             .single();
 
@@ -347,7 +348,7 @@ export async function saveIncompleteGame(
         }
     }
 
-    return gameId;
+    return lastGameId;
 }
 
 /**
@@ -723,8 +724,9 @@ export async function getDailyGames(date?: string): Promise<DailyGame[]> {
       )
     `)
         .eq('date', targetDate)
+        .eq('date', targetDate)
         .eq('completed', false)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: true });
 
     if (gamesError) {
         console.error(`Error loading games for ${targetDate}:`, gamesError);
