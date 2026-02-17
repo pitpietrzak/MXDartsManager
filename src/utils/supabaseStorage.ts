@@ -320,7 +320,7 @@ export async function saveIncompleteGame(
         // Insert group with correct index
         const { data: groupData, error: groupError } = await supabase
             .from('game_groups')
-            .insert({ game_id: gameId, group_index: i })
+            .insert({ game_id: gameId, group_index: i + 1 })
             .select()
             .single();
 
@@ -587,7 +587,7 @@ export async function saveGame(
 
             const { data: groupData, error: groupError } = await supabase
                 .from('game_groups')
-                .insert({ game_id: gameData.id, group_index: i })
+                .insert({ game_id: gameData.id, group_index: i + 1 })
                 .select()
                 .single();
 
