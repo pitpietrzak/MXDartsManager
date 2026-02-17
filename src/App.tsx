@@ -22,7 +22,6 @@ import {
   addPlayer as dbAddPlayer,
   removePlayer as dbRemovePlayer,
   loadMonthGames,
-  saveIncompleteGame as dbSaveIncompleteGame,
   deleteGame as dbDeleteGame,
   getDailyGames,
   getCurrentMonth,
