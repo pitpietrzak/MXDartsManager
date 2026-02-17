@@ -4,6 +4,7 @@ import { Player, MonthlyStats, DailyGame } from '../types/types';
 import { TodaysGames } from './TodaysGames';
 import { useLanguage } from '../contexts/LanguageContext';
 import { updatePlayer } from '../utils/supabaseStorage';
+import { useUserPreferences } from '../contexts/UserPreferencesContext';
 
 interface MyProfileProps {
     player: Player;
@@ -23,6 +24,7 @@ export const MyProfile: React.FC<MyProfileProps> = ({
     onNavigateToResults
 }) => {
     const { t, language } = useLanguage();
+    const { preferences, toggleHighlightYourGames } = useUserPreferences();
     const [isUpdating, setIsUpdating] = useState(false);
     const [playerState, setPlayerState] = useState(player);
     const [isEditingEmoji, setIsEditingEmoji] = useState(false);
@@ -162,6 +164,36 @@ export const MyProfile: React.FC<MyProfileProps> = ({
                             </label>
                             <span style={{ fontSize: '1.5rem', transition: 'transform 0.2s' }}>
                                 {playerState.isPlayingToday !== false ? '😃' : '😞'}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Highlight Games Toggle */}
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: 'var(--spacing-md)',
+                        background: 'var(--color-bg-secondary)',
+                        borderRadius: 'var(--radius-md)'
+                    }}>
+                        <div>
+                            <div style={{ fontWeight: 600 }}>{t('profile.highlightYourGames')}</div>
+                            <div className="text-muted" style={{ fontSize: '0.875rem' }}>
+                                {t('profile.highlightYourGamesDesc')}
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)' }}>
+                            <label className="switch switch-sm">
+                                <input
+                                    type="checkbox"
+                                    checked={preferences.highlightYourGames}
+                                    onChange={toggleHighlightYourGames}
+                                />
+                                <span className="slider round"></span>
+                            </label>
+                            <span style={{ fontSize: '1.5rem' }}>
+                                {preferences.highlightYourGames ? '🔦' : '🌑'}
                             </span>
                         </div>
                     </div>

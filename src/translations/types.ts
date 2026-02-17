@@ -155,7 +155,9 @@ export type TranslationKey =
     | 'profile.setAvailable'
     | 'profile.setUnavailable'
     | 'game.itsYou'
-    | 'common.total';
+    | 'common.total'
+    | 'profile.highlightYourGames'
+    | 'profile.highlightYourGamesDesc';
 
 export interface Translations {
     [key: string]: string;

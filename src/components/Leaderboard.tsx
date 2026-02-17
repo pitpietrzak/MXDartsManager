@@ -1,6 +1,7 @@
 import React from 'react';
 import { MonthlyStats, Player } from '../types/types';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useUserPreferences } from '../contexts/UserPreferencesContext';
 
 interface LeaderboardProps {
     stats: MonthlyStats[];
@@ -11,7 +12,11 @@ interface LeaderboardProps {
 
 export const Leaderboard: React.FC<LeaderboardProps> = ({ stats, currentMonth, currentPlayerId, players }) => {
     const { t, language } = useLanguage();
+    const { preferences } = useUserPreferences();
     const sortedStats = [...stats].sort((a, b) => b.rating - a.rating);
+
+    // Override currentPlayerId if highlighting is disabled
+    const effectivePlayerId = preferences.highlightYourGames ? currentPlayerId : null;
     const isCurrentMonth = currentMonth === new Date().toISOString().slice(0, 7);
 
     const formatMonth = (monthStr: string) => {
@@ -99,7 +104,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ stats, currentMonth, c
                             </thead>
                             <tbody>
                                 {sortedStats.map((stat, index) => {
-                                    const isCurrentPlayer = currentPlayerId && stat.playerId === currentPlayerId;
+                                    const isCurrentPlayer = effectivePlayerId && stat.playerId === effectivePlayerId;
                                     return (
                                         <tr
                                             key={stat.playerId}

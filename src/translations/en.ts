@@ -157,5 +157,7 @@ export const en: Translations = {
     'profile.updated': 'Profile updated',
     'profile.setAvailable': 'Click to set yourself as available for today\'s draw',
     'profile.setUnavailable': 'Click to set yourself as unavailable for today\'s draw',
-    'common.total': 'total'
+    'common.total': 'total',
+    'profile.highlightYourGames': 'Highlight me',
+    'profile.highlightYourGamesDesc': 'Show "It\'s You" badges, highlight your group and your historical games'
 };

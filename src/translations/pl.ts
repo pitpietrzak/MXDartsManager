@@ -157,5 +157,7 @@ export const pl: Translations = {
     'profile.updated': 'Profil zaktualizowany',
     'profile.setAvailable': 'Kliknij, aby zaznaczyć dostępność do dzisiejszego losowania',
     'profile.setUnavailable': 'Kliknij, aby wyłączyć dostępność w dzisiejszym losowaniu',
-    'common.total': 'łącznie'
+    'common.total': 'łącznie',
+    'profile.highlightYourGames': 'Wyróżnij mnie',
+    'profile.highlightYourGamesDesc': 'Pokazuj odznaki "To Ty" i wyróżniaj moją grupę oraz moje gry w historii gier'
 };

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { DailyGame } from '../types/types';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useUserPreferences } from '../contexts/UserPreferencesContext';
 
 interface GameHistoryProps {
     games: DailyGame[];
@@ -11,7 +12,11 @@ interface GameHistoryProps {
 
 export const GameHistory: React.FC<GameHistoryProps> = ({ games, currentPlayerId, role, onDelete }) => {
     const { t, language } = useLanguage();
+    const { preferences } = useUserPreferences();
     const [deletingId, setDeletingId] = useState<string | null>(null);
+
+    // Override currentPlayerId if highlighting is disabled
+    const effectivePlayerId = preferences.highlightYourGames ? currentPlayerId : null;
     const formatDate = (dateStr: string) => {
         const date = new Date(dateStr);
         return date.toLocaleDateString(language === 'pl' ? 'pl-PL' : 'en-US', {
@@ -147,13 +152,13 @@ export const GameHistory: React.FC<GameHistoryProps> = ({ games, currentPlayerId
                                                                             return (
                                                                                 <div key={result.playerId} style={{ padding: 'var(--spacing-xs) 0' }}>
                                                                                     {emoji} <span style={{
-                                                                                        fontWeight: player?.id === currentPlayerId ? 700 : 400,
-                                                                                        color: player?.id === currentPlayerId ? 'var(--color-accent-primary)' : 'inherit'
+                                                                                        fontWeight: player?.id === effectivePlayerId ? 700 : 400,
+                                                                                        color: player?.id === effectivePlayerId ? 'var(--color-accent-primary)' : 'inherit'
                                                                                     }}>
                                                                                         {player?.name}
                                                                                     </span>: <span style={{
-                                                                                        fontWeight: player?.id === currentPlayerId ? 700 : 400,
-                                                                                        color: player?.id === currentPlayerId ? 'var(--color-accent-primary)' : 'var(--color-text-muted)'
+                                                                                        fontWeight: player?.id === effectivePlayerId ? 700 : 400,
+                                                                                        color: player?.id === effectivePlayerId ? 'var(--color-accent-primary)' : 'var(--color-text-muted)'
                                                                                     }}>
                                                                                         {result.wins}-{result.losses}
                                                                                     </span>

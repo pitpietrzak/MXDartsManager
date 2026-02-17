@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Group, GameResult } from '../types/types';
 import { calculateWinsLosses } from '../utils/groupGenerator';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useUserPreferences } from '../contexts/UserPreferencesContext';
 
 interface ResultsEntryProps {
     groups: Group[];
@@ -17,7 +18,11 @@ export const ResultsEntry: React.FC<ResultsEntryProps> = ({
     currentUserId
 }) => {
     const { t } = useLanguage();
+    const { preferences } = useUserPreferences();
     const [groupResults, setGroupResults] = useState<Map<string, GameResult[]>>(new Map());
+
+    // Override currentUserId if highlighting is disabled
+    const effectiveUserId = preferences.highlightYourGames ? currentUserId : null;
 
     // Initialize state from props
     React.useEffect(() => {
@@ -133,30 +138,30 @@ export const ResultsEntry: React.FC<ResultsEntryProps> = ({
                 {groups.map((group, groupIndex) => {
                     const results = groupResults.get(group.id) || [];
                     const isComplete = isGroupComplete(group.id);
-                    const isUserGroup = currentUserId ? group.players.some(p => p.id === currentUserId) : false;
+                    const isUserGroup = effectiveUserId ? group.players.some(p => p.id === effectiveUserId) : false;
 
                     return (
                         <div
                             key={group.id}
                             style={{
                                 padding: 'var(--spacing-md)',
-                                background: isUserGroup ? 'var(--color-accent-success)' : 'var(--color-bg-secondary)',
+                                background: isUserGroup ? 'rgba(34, 197, 94, 0.05)' : 'var(--color-bg-secondary)',
                                 borderRadius: 'var(--radius-lg)',
                                 border: isUserGroup ? '2px solid var(--color-accent-success)' : (isComplete ? '2px solid var(--color-accent-success)' : '2px solid var(--color-border-light)'),
-                                color: isUserGroup ? 'white' : 'inherit'
+                                position: 'relative'
                             }}
                         >
                             <div className="flex items-center justify-between mb-md">
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
-                                    <h4 style={{ fontSize: '1rem', margin: 0, color: isUserGroup ? 'white' : 'inherit' }}>
+                                    <h4 style={{ fontSize: '1rem', margin: 0, fontWeight: 600, color: 'var(--color-text-primary)' }}>
                                         {t('game.group')} {groupIndex + 1}
                                     </h4>
                                     {isUserGroup && (
                                         <span style={{
                                             fontSize: '0.75rem',
                                             padding: '2px 8px',
-                                            background: 'white',
-                                            color: 'var(--color-accent-success)',
+                                            background: 'var(--color-accent-success)',
+                                            color: 'white',
                                             borderRadius: 'var(--radius-sm)',
                                             fontWeight: 600
                                         }}>
@@ -165,7 +170,7 @@ export const ResultsEntry: React.FC<ResultsEntryProps> = ({
                                     )}
                                 </div>
                                 {isComplete && (
-                                    <span className="badge badge-success" style={isUserGroup ? { background: 'white', color: 'var(--color-accent-success)' } : {}}>{t('results.complete')}</span>
+                                    <span className="badge badge-success">{t('results.complete')}</span>
                                 )}
                             </div>
 
@@ -179,14 +184,14 @@ export const ResultsEntry: React.FC<ResultsEntryProps> = ({
                                             className="flex items-center justify-between"
                                             style={{
                                                 padding: 'var(--spacing-sm)',
-                                                background: isUserGroup ? 'rgba(255, 255, 255, 0.2)' : 'var(--color-bg-tertiary)',
+                                                background: 'var(--color-bg-tertiary)',
                                                 borderRadius: 'var(--radius-md)',
-                                                color: isUserGroup ? 'white' : 'inherit'
+                                                border: '1px solid var(--color-border-light)'
                                             }}
                                         >
-                                            <span style={{ fontWeight: player.id === currentUserId ? 700 : 500, fontSize: '0.875rem' }}>
+                                            <span style={{ fontWeight: player.id === effectiveUserId ? 700 : 500, fontSize: '0.875rem' }}>
                                                 {player.name} {player.emoji}
-                                                {player.id === currentUserId && (
+                                                {player.id === effectiveUserId && (
                                                     <span style={{
                                                         marginLeft: 'var(--spacing-sm)',
                                                         fontSize: '0.65rem',

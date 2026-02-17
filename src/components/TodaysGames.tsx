@@ -1,6 +1,7 @@
 import React from 'react';
 import { DailyGame, Group } from '../types/types';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useUserPreferences } from '../contexts/UserPreferencesContext';
 
 interface TodaysGamesProps {
     games: DailyGame[];
@@ -16,6 +17,10 @@ export const TodaysGames: React.FC<TodaysGamesProps> = ({
     onNavigateToResults
 }) => {
     const { t } = useLanguage();
+    const { preferences } = useUserPreferences();
+
+    // Override currentUserId if highlighting is disabled
+    const effectiveUserId = preferences.highlightYourGames ? currentUserId : null;
 
     if (games.length === 0) {
         return (
@@ -35,7 +40,7 @@ export const TodaysGames: React.FC<TodaysGamesProps> = ({
 
     // Find which group the current user is in
     const userGroupIndex = allGroups.findIndex(group =>
-        group.players.some(player => player.id === currentUserId)
+        group.players.some(player => player.id === effectiveUserId)
     );
 
     return (
@@ -113,7 +118,7 @@ export const TodaysGames: React.FC<TodaysGamesProps> = ({
 
                             <div style={{ display: 'grid', gap: 'var(--spacing-xs)' }}>
                                 {group.players.map((player) => {
-                                    const isCurrentUser = player.id === currentUserId;
+                                    const isCurrentUser = player.id === effectiveUserId;
                                     return (
                                         <div
                                             key={player.id}
