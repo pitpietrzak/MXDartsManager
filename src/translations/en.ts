@@ -159,5 +159,9 @@ export const en: Translations = {
     'profile.setUnavailable': 'Click to set yourself as unavailable for today\'s draw',
     'common.total': 'total',
     'profile.highlightYourGames': 'Highlight me',
-    'profile.highlightYourGamesDesc': 'Show "It\'s You" badges, highlight your group and your historical games'
+    'profile.highlightYourGamesDesc': 'Show "It\'s You" badges, highlight your group and your historical games',
+    'profile.absenceSchedule': 'Absence Schedule',
+    'profile.absenceDescription': 'Click dates to mark when you are absent. Use this to help organizers plan games.',
+    'profile.absent': 'Absent',
+    'profile.available': 'Available'
 };

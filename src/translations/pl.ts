@@ -159,5 +159,9 @@ export const pl: Translations = {
     'profile.setUnavailable': 'Kliknij, aby wyłączyć dostępność w dzisiejszym losowaniu',
     'common.total': 'łącznie',
     'profile.highlightYourGames': 'Wyróżnij mnie',
-    'profile.highlightYourGamesDesc': 'Pokazuj odznaki "To Ty" i wyróżniaj moją grupę oraz moje gry w historii gier'
+    'profile.highlightYourGamesDesc': 'Pokazuj odznaki "To Ty" i wyróżniaj moją grupę oraz moje gry w historii gier',
+    'profile.absenceSchedule': 'Planer Nieobecności',
+    'profile.absenceDescription': 'Zaznacz dni, w których będziesz nieobecny. Pomoże to nam w organizacji gier.',
+    'profile.absent': 'Nieobecny',
+    'profile.available': 'Dostępny'
 };

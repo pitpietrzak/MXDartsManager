@@ -776,3 +776,97 @@ export async function getDailyGames(date?: string): Promise<DailyGame[]> {
         };
     });
 }
+
+/**
+ * Get absences for a specific player in a given month range
+ */
+export async function getPlayerAbsences(playerId: string, start: string, end: string): Promise<string[]> {
+    const { data, error } = await supabase
+        .from('player_absences')
+        .select('absence_date')
+        .eq('player_id', playerId)
+        .gte('absence_date', start)
+        .lte('absence_date', end);
+
+    if (error) {
+        console.error('Error fetching absences:', error);
+        return [];
+    }
+
+    return data.map(d => d.absence_date);
+}
+
+/**
+ * Toggle absence for a specific date
+ * Returns true if the absence was ADDED, false if REMOVED (or null on error)
+ */
+export async function togglePlayerAbsence(playerId: string, date: string): Promise<boolean | null> {
+    // Check if absence exists
+    const { data: existing } = await supabase
+        .from('player_absences')
+        .select('id')
+        .eq('player_id', playerId)
+        .eq('absence_date', date)
+        .single();
+
+    if (existing) {
+        // Remove absence
+        const { error } = await supabase
+            .from('player_absences')
+            .delete()
+            .eq('id', existing.id);
+
+        if (error) {
+            console.error('Error removing absence:', error);
+            return null;
+        }
+        return false; // Removed
+    } else {
+        // Add absence
+        const { error } = await supabase
+            .from('player_absences')
+            .insert({
+                player_id: playerId,
+                absence_date: date
+            });
+
+        if (error) {
+            console.error('Error adding absence:', error);
+            return null;
+        }
+        return true; // Added
+    }
+}
+
+/**
+ * Set absence for a specific date (force add or remove)
+ */
+export async function setPlayerAbsence(playerId: string, date: string, isAbsent: boolean): Promise<boolean> {
+    if (isAbsent) {
+        // Add absence (ignore if already exists)
+        const { error } = await supabase
+            .from('player_absences')
+            .upsert({
+                player_id: playerId,
+                absence_date: date
+            }, { onConflict: 'player_id, absence_date' });
+
+        if (error) {
+            console.error('Error setting absence:', error);
+            return false;
+        }
+    } else {
+        // Remove absence
+        const { error } = await supabase
+            .from('player_absences')
+            .delete()
+            .eq('player_id', playerId)
+            .eq('absence_date', date);
+
+        if (error) {
+            console.error('Error removing absence:', error);
+            return false;
+        }
+    }
+    return true;
+}

@@ -9,6 +9,12 @@ export interface Player {
   emoji?: string;
 }
 
+export interface Absence {
+  id: string;
+  playerId: string;
+  date: string; // ISO date string YYYY-MM-DD
+}
+
 export interface GameResult {
   playerId: string;
   wins: number;

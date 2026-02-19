@@ -3,8 +3,9 @@ import EmojiPicker, { EmojiClickData, Theme } from 'emoji-picker-react';
 import { Player, MonthlyStats, DailyGame } from '../types/types';
 import { TodaysGames } from './TodaysGames';
 import { useLanguage } from '../contexts/LanguageContext';
-import { updatePlayer } from '../utils/supabaseStorage';
+import { updatePlayer, setPlayerAbsence } from '../utils/supabaseStorage';
 import { useUserPreferences } from '../contexts/UserPreferencesContext';
+import { AbsenceCalendar } from './AbsenceCalendar';
 
 interface MyProfileProps {
     player: Player;
@@ -43,7 +44,41 @@ export const MyProfile: React.FC<MyProfileProps> = ({
             setPlayerState(playerState); // Revert on failure
             alert(t('common.error'));
         }
+
+        // Sync absence if isPlayingToday changed
+        if (updates.isPlayingToday !== undefined) {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = today.getMonth() + 1;
+            const day = today.getDate();
+            const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+            // If playing (true) -> Available (not absent)
+            // If not playing (false) -> Absent (true)
+            await setPlayerAbsence(player.id, dateStr, !updates.isPlayingToday);
+        }
+
         setIsUpdating(false);
+    };
+
+    const handleAbsenceChange = async (date: string, isAbsent: boolean) => {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = today.getMonth() + 1;
+        const day = today.getDate();
+        const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+        // If the changed date is today, update the toggle
+        if (date === dateStr) {
+            // If absent -> not playing
+            // If available -> playing
+            const isPlaying = !isAbsent;
+            if (playerState.isPlayingToday !== isPlaying) {
+                // Update state without triggering another absence sync loop (handleUpdateProfile handles sync, so we need to be careful)
+                // Actually relying on handleUpdateProfile is fine because setPlayerAbsence is idempotent-ish or cheap.
+                handleUpdateProfile({ isPlayingToday: isPlaying });
+            }
+        }
     };
 
     const handleEmojiClick = (emojiData: EmojiClickData) => {
@@ -199,6 +234,13 @@ export const MyProfile: React.FC<MyProfileProps> = ({
                     </div>
                 </div>
             </div>
+
+            {/* Absence Calendar */}
+            <AbsenceCalendar
+                playerId={player.id}
+                isScriptPlayingToday={playerState.isPlayingToday}
+                onAbsenceChange={handleAbsenceChange}
+            />
 
             {/* Stats Overview */}
             {stats && (

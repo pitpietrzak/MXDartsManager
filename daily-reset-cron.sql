@@ -5,10 +5,16 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
 -- Schedule the daily reset job
 -- This will run every day at 3:00 AM UTC
 -- It resets 'is_playing_today' to TRUE for all players
-SELECT cron.schedule(
     'reset-is-playing-today', -- Unique name for the job
     '0 3 * * *',              -- Cron schedule (3:00 AM daily)
-    $$UPDATE players SET is_playing_today = TRUE WHERE is_playing_today = FALSE$$
+    $$
+    UPDATE players
+    SET is_playing_today = NOT EXISTS (
+        SELECT 1 FROM player_absences
+        WHERE player_absences.player_id = players.id
+        AND player_absences.absence_date = CURRENT_DATE
+    )
+    $$
 );
 
 -- To check if the job is scheduled, you can run:
