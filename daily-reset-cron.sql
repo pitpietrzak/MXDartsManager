@@ -5,6 +5,7 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
 -- Schedule the daily reset job
 -- This will run every day at 3:00 AM UTC
 -- It resets 'is_playing_today' to TRUE for all players
+SELECT cron.schedule(
     'reset-is-playing-today', -- Unique name for the job
     '0 3 * * *',              -- Cron schedule (3:00 AM daily)
     $$
