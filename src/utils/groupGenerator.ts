@@ -18,7 +18,11 @@ function shuffle<T>(array: T[]): T[] {
  * @param numberOfGroups - Number of groups to create (1, 2, or 3)
  * @returns Array of player groups with balanced sizes
  */
-export function generateGroups(players: Player[], numberOfGroups: number = 1): Player[][] {
+export function generateGroups(
+    players: Player[],
+    numberOfGroups: number = 1,
+    playerOrderFn?: (players: Player[]) => Player[]
+): Player[][] {
     if (players.length < 2) {
         throw new Error('Need at least 2 players to create a group');
     }
@@ -45,6 +49,11 @@ export function generateGroups(players: Player[], numberOfGroups: number = 1): P
         const groupSize = baseSize + (i < remainder ? 1 : 0);
         groups.push(shuffled.slice(currentIndex, currentIndex + groupSize));
         currentIndex += groupSize;
+    }
+
+    // Apply player ordering within each group if provided
+    if (playerOrderFn) {
+        return groups.map(group => playerOrderFn(group));
     }
 
     return groups;

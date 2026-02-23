@@ -163,5 +163,6 @@ export const pl: Translations = {
     'profile.absenceSchedule': 'Planer Nieobecności',
     'profile.absenceDescription': 'Zaznacz dni, w których będziesz nieobecny. Pomoże to nam w organizacji gier.',
     'profile.absent': 'Nieobecny',
-    'profile.available': 'Dostępny'
+    'profile.available': 'Dostępny',
+    'game.orderedByLastGames': 'Kolejność graczy wg ostatnich gier'
 };

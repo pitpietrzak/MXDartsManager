@@ -1,6 +1,7 @@
 import React from 'react';
-import { Player, Group } from '../types/types';
+import { Player, Group, DailyGame, MonthlyStats } from '../types/types';
 import { generateGroups } from '../utils/groupGenerator';
+import { orderPlayersInGroup } from '../utils/groupOrderer';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface GroupDrawerProps {
@@ -8,13 +9,17 @@ interface GroupDrawerProps {
     groups: Group[];
     onGroupsGenerated: (groups: Group[]) => void;
     currentUserId?: string;
+    previousGamedayGames: DailyGame[];
+    stats: MonthlyStats[];
 }
 
 export const GroupDrawer: React.FC<GroupDrawerProps> = ({
     presentPlayers,
     groups,
     onGroupsGenerated,
-    currentUserId
+    currentUserId,
+    previousGamedayGames,
+    stats
 }) => {
     const { t } = useLanguage();
     const [numberOfGroups, setNumberOfGroups] = React.useState<number>(1);
@@ -24,7 +29,11 @@ export const GroupDrawer: React.FC<GroupDrawerProps> = ({
             return;
         }
 
-        const playerGroups = generateGroups(presentPlayers, numberOfGroups);
+        // Order function: sorts players within each group by draw priority
+        const orderFn = (groupPlayers: Player[]) =>
+            orderPlayersInGroup(groupPlayers, previousGamedayGames, stats);
+
+        const playerGroups = generateGroups(presentPlayers, numberOfGroups, orderFn);
         const newGroups: Group[] = playerGroups.map((players, index) => ({
             id: `group-${Date.now()}-${index}`,
             players,

@@ -31,6 +31,7 @@ import {
   updateDailyGroups
 } from './utils/supabaseStorage';
 import { calculateMonthlyRatings, calculateStatsFromGames } from './utils/ratingCalculator';
+import { getPreviousGameday } from './utils/groupOrderer';
 import './index.css';
 
 
@@ -76,6 +77,13 @@ function App() {
   const [isEditingGroups, setIsEditingGroups] = useState(false);
 
   const currentMonth = getCurrentMonth();
+
+  // Compute previous gameday games for player ordering in group draw
+  const previousGamedayGames = useMemo(() => {
+    const prevDate = getPreviousGameday(selectedDate, games);
+    if (!prevDate) return [];
+    return games.filter(g => g.date === prevDate && g.completed);
+  }, [selectedDate, games]);
 
   // Helper function to check if a date is a weekend
   const isWeekend = (dateStr: string): boolean => {
@@ -597,6 +605,8 @@ function App() {
                       groups={drawnGroups}
                       onGroupsGenerated={handleGroupsGenerated}
                       currentUserId={userPlayer?.id}
+                      previousGamedayGames={previousGamedayGames}
+                      stats={stats}
                     />
                   )}
                 </>
