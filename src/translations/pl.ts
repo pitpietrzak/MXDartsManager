@@ -19,7 +19,7 @@ export const pl: Translations = {
     'auth.haveAccount': 'Masz już konto? Zaloguj się',
     'auth.needAccount': 'Nie masz konta? Zarejestruj się',
     'dashboard.welcome': 'Witamy w Lidze Darta Macrix! 🎯',
-    'dashboard.description': 'Zarządzaj codziennymi rozgrywkami, śledź statystyki i sprawdź kto zostanie Mistrza Miesiąca!',
+    'dashboard.description': 'Zarządzaj codziennymi rozgrywkami, śledź statystyki i sprawdź kto zostanie Mistrzem Miesiąca!',
     'dashboard.totalPlayers': 'Liczba Graczy',
     'dashboard.gamesMonth': 'Gry w tym miesiącu',
     'dashboard.currentLeader': 'Lider',
