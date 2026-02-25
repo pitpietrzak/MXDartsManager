@@ -164,5 +164,7 @@ export const pl: Translations = {
     'profile.absenceDescription': 'Zaznacz dni, w których będziesz nieobecny. Pomoże to nam w organizacji gier.',
     'profile.absent': 'Nieobecny',
     'profile.available': 'Dostępny',
-    'game.orderedByLastGames': 'Kolejność graczy wg ostatnich gier'
+    'game.orderedByLastGames': 'Kolejność graczy wg ostatnich gier',
+    'attendance.recentlyActive': '🟢 Ostatnio aktywni',
+    'attendance.lessActive': '💤 Mniej aktywni'
 };

@@ -164,5 +164,7 @@ export const en: Translations = {
     'profile.absenceDescription': 'Click dates to mark when you are absent. Use this to help organizers plan games.',
     'profile.absent': 'Absent',
     'profile.available': 'Available',
-    'game.orderedByLastGames': 'Players ordered by last games'
+    'game.orderedByLastGames': 'Players ordered by last games',
+    'attendance.recentlyActive': '🟢 Recently Active',
+    'attendance.lessActive': '💤 Less Active'
 };

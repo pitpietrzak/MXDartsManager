@@ -78,6 +78,23 @@ function App() {
 
   const currentMonth = getCurrentMonth();
 
+  // Compute which players are recently active (≥3 distinct days played this month)
+  const activePlayerIds = useMemo(() => {
+    const daysMap = new Map<string, Set<string>>();
+    games.forEach(game => {
+      if (!game.completed) return;
+      game.groups.forEach(group => {
+        group.results?.forEach(r => {
+          if (!daysMap.has(r.playerId)) daysMap.set(r.playerId, new Set());
+          daysMap.get(r.playerId)!.add(game.date);
+        });
+      });
+    });
+    const ids = new Set<string>();
+    daysMap.forEach((dates, playerId) => { if (dates.size >= 3) ids.add(playerId); });
+    return ids;
+  }, [games]);
+
   // Compute previous gameday games for player ordering in group draw
   const previousGamedayGames = useMemo(() => {
     const prevDate = getPreviousGameday(selectedDate, games);
@@ -597,6 +614,7 @@ function App() {
                     selectedPlayerIds={selectedPlayerIds}
                     onSelectionChange={setSelectedPlayerIds}
                     playersWhoPlayedToday={getPlayersWhoPlayedToday()}
+                    activePlayerIds={activePlayerIds}
                   />
 
                   {selectedPlayerIds.length >= 2 && !manualEntry && drawnGroups.length === 0 && (

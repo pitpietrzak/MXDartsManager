@@ -162,7 +162,9 @@ export type TranslationKey =
     | 'profile.absenceDescription'
     | 'profile.absent'
     | 'profile.available'
-    | 'game.orderedByLastGames';
+    | 'game.orderedByLastGames'
+    | 'attendance.recentlyActive'
+    | 'attendance.lessActive';
 
 export interface Translations {
     [key: string]: string;

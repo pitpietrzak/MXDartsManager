@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Player } from '../types/types';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -7,20 +7,23 @@ interface AttendanceSelectorProps {
     selectedPlayerIds: string[];
     onSelectionChange: (playerIds: string[]) => void;
     playersWhoPlayedToday: Set<string>;
+    activePlayerIds: Set<string>;
 }
 
 export const AttendanceSelector: React.FC<AttendanceSelectorProps> = ({
     players,
     selectedPlayerIds,
     onSelectionChange,
-    playersWhoPlayedToday
+    playersWhoPlayedToday,
+    activePlayerIds
 }) => {
     const { t } = useLanguage();
     const selectionSet = new Set(selectedPlayerIds);
-    // Remove useEffect as we use props directly
+
+    const [activeExpanded, setActiveExpanded] = useState(true);
+    const [inactiveExpanded, setInactiveExpanded] = useState(true);
 
     const togglePlayer = (playerId: string) => {
-        // Don't allow toggling players who already played today or are marked as not playing
         if (playersWhoPlayedToday.has(playerId)) {
             return;
         }
@@ -40,7 +43,6 @@ export const AttendanceSelector: React.FC<AttendanceSelectorProps> = ({
     };
 
     const selectAll = () => {
-        // Only select players who haven't played today and are playing today
         const availableIds = players
             .filter(p => !playersWhoPlayedToday.has(p.id) && p.isPlayingToday !== false)
             .map(p => p.id);
@@ -52,6 +54,101 @@ export const AttendanceSelector: React.FC<AttendanceSelectorProps> = ({
     };
 
     const availablePlayers = players.filter(p => !playersWhoPlayedToday.has(p.id) && p.isPlayingToday !== false);
+
+    // Split players into active and inactive sections
+    const activePlayers = players.filter(p => activePlayerIds.has(p.id));
+    const inactivePlayers = players.filter(p => !activePlayerIds.has(p.id));
+
+    const renderPlayer = (player: Player) => {
+        const hasPlayedToday = playersWhoPlayedToday.has(player.id);
+        const isSelected = selectionSet.has(player.id);
+        const isDisabled = hasPlayedToday || player.isPlayingToday === false;
+
+        return (
+            <label
+                key={player.id}
+                className="checkbox-wrapper"
+                style={{
+                    opacity: isDisabled ? 0.5 : 1,
+                    cursor: isDisabled ? 'not-allowed' : 'pointer',
+                    position: 'relative'
+                }}
+            >
+                <input
+                    type="checkbox"
+                    className="checkbox"
+                    checked={isSelected}
+                    onChange={() => togglePlayer(player.id)}
+                    disabled={isDisabled}
+                />
+                <span style={{ fontWeight: 500, flex: 1 }}>{player.name} {player.emoji}</span>
+                {hasPlayedToday && (
+                    <span className="badge badge-secondary" style={{ fontSize: '0.75rem' }}>
+                        ✅ {t('attendance.alreadyPlayed')}
+                    </span>
+                )}
+                {player.isPlayingToday === false && (
+                    <span className="badge badge-secondary" style={{ fontSize: '0.75rem' }}>
+                        ❌ {t('profile.notPlayingToday')}
+                    </span>
+                )}
+            </label>
+        );
+    };
+
+    const renderSection = (
+        title: string,
+        sectionPlayers: Player[],
+        expanded: boolean,
+        onToggle: () => void
+    ) => {
+        if (sectionPlayers.length === 0) return null;
+
+        const sectionSelectedCount = sectionPlayers.filter(p => selectionSet.has(p.id)).length;
+
+        return (
+            <div style={{ marginBottom: 'var(--spacing-md)' }}>
+                <button
+                    onClick={onToggle}
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        width: '100%',
+                        background: 'var(--color-bg-secondary)',
+                        border: '1px solid var(--color-border)',
+                        borderRadius: 'var(--radius-md)',
+                        padding: 'var(--spacing-sm) var(--spacing-md)',
+                        cursor: 'pointer',
+                        color: 'var(--color-text-primary)',
+                        fontSize: '0.9rem',
+                        fontWeight: 600,
+                        marginBottom: expanded ? 'var(--spacing-sm)' : 0,
+                        transition: 'all 0.2s ease'
+                    }}
+                >
+                    <span>{title}</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
+                        <span className="badge badge-primary" style={{ fontSize: '0.75rem', padding: '2px 8px' }}>
+                            {sectionSelectedCount}/{sectionPlayers.length}
+                        </span>
+                        <span style={{
+                            transform: expanded ? 'rotate(180deg)' : 'rotate(0)',
+                            transition: 'transform 0.2s ease',
+                            fontSize: '0.8rem'
+                        }}>
+                            ▼
+                        </span>
+                    </span>
+                </button>
+                {expanded && (
+                    <div style={{ display: 'grid', gap: 'var(--spacing-xs)' }}>
+                        {sectionPlayers.map(renderPlayer)}
+                    </div>
+                )}
+            </div>
+        );
+    };
 
     return (
         <div className="card fade-in">
@@ -90,43 +187,19 @@ export const AttendanceSelector: React.FC<AttendanceSelectorProps> = ({
                     {t('attendance.noPlayers')}
                 </p>
             ) : (
-                <div style={{ display: 'grid', gap: 'var(--spacing-xs)' }}>
-                    {players.map((player) => {
-                        const hasPlayedToday = playersWhoPlayedToday.has(player.id);
-                        const isSelected = selectionSet.has(player.id);
-                        const isDisabled = hasPlayedToday || player.isPlayingToday === false;
-
-                        return (
-                            <label
-                                key={player.id}
-                                className="checkbox-wrapper"
-                                style={{
-                                    opacity: isDisabled ? 0.5 : 1,
-                                    cursor: isDisabled ? 'not-allowed' : 'pointer',
-                                    position: 'relative'
-                                }}
-                            >
-                                <input
-                                    type="checkbox"
-                                    className="checkbox"
-                                    checked={isSelected}
-                                    onChange={() => togglePlayer(player.id)}
-                                    disabled={isDisabled}
-                                />
-                                <span style={{ fontWeight: 500, flex: 1 }}>{player.name} {player.emoji}</span>
-                                {hasPlayedToday && (
-                                    <span className="badge badge-secondary" style={{ fontSize: '0.75rem' }}>
-                                        ✅ {t('attendance.alreadyPlayed')}
-                                    </span>
-                                )}
-                                {player.isPlayingToday === false && (
-                                    <span className="badge badge-secondary" style={{ fontSize: '0.75rem' }}>
-                                        ❌ {t('profile.notPlayingToday')}
-                                    </span>
-                                )}
-                            </label>
-                        );
-                    })}
+                <div>
+                    {renderSection(
+                        t('attendance.recentlyActive'),
+                        activePlayers,
+                        activeExpanded,
+                        () => setActiveExpanded(prev => !prev)
+                    )}
+                    {renderSection(
+                        t('attendance.lessActive'),
+                        inactivePlayers,
+                        inactiveExpanded,
+                        () => setInactiveExpanded(prev => !prev)
+                    )}
                 </div>
             )}
 
