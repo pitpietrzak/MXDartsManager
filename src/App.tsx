@@ -109,11 +109,14 @@ function App() {
 
   // Darter of last month
   const [darterOfLastMonth, setDarterOfLastMonth] = useState<{ playerName: string; playerId: string; rating: number } | null>(null);
+  const [lastMonthGames, setLastMonthGames] = useState<DailyGame[]>([]);
 
-  // Compute which players are recently active (≥3 distinct days played this month)
+  // Compute which players are recently active (≥3 distinct days played across this month and last month)
   const activePlayerIds = useMemo(() => {
     const daysMap = new Map<string, Set<string>>();
-    games.forEach(game => {
+    const allGames = [...games, ...lastMonthGames];
+
+    allGames.forEach(game => {
       if (!game.completed) return;
       game.groups.forEach(group => {
         group.results?.forEach(r => {
@@ -122,10 +125,11 @@ function App() {
         });
       });
     });
+
     const ids = new Set<string>();
     daysMap.forEach((dates, playerId) => { if (dates.size >= 3) ids.add(playerId); });
     return ids;
-  }, [games]);
+  }, [games, lastMonthGames]);
 
   // Compute previous gameday games for player ordering in group draw
   const previousGamedayGames = useMemo(() => {
@@ -147,7 +151,7 @@ function App() {
     async function loadData() {
       setLoading(true);
       try {
-        const [loadedPlayers, loadedGames, loadedTodaysGames, lastMonthGames] = await Promise.all([
+        const [loadedPlayers, loadedGames, loadedTodaysGames, lastMonthGamesData] = await Promise.all([
           loadPlayers(),
           loadMonthGames(currentMonth),
           getDailyGames(),
@@ -157,10 +161,11 @@ function App() {
         setPlayers(loadedPlayers);
         setGames(loadedGames);
         setTodaysGames(loadedTodaysGames);
+        setLastMonthGames(lastMonthGamesData);
 
         // Compute darter of last month
-        if (lastMonthGames.length > 0) {
-          const lastMonthStats = calculateMonthlyRatings(calculateStatsFromGames(lastMonthGames));
+        if (lastMonthGamesData.length > 0) {
+          const lastMonthStats = calculateMonthlyRatings(calculateStatsFromGames(lastMonthGamesData));
           const top = [...lastMonthStats].sort((a, b) => b.rating - a.rating)[0];
           if (top && top.gamesPlayed > 0) {
             setDarterOfLastMonth({ playerName: top.playerName, playerId: top.playerId, rating: top.rating });
