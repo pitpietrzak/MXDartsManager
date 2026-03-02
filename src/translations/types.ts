@@ -103,6 +103,7 @@ export type TranslationKey =
     | 'attendance.description'
     | 'attendance.available'
     | 'attendance.selectAll'
+    | 'attendance.selectRecent'
     | 'attendance.clearAll'
     | 'attendance.noPlayers'
     | 'attendance.alreadyPlayed'

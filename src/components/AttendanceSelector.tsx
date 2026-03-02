@@ -49,6 +49,13 @@ export const AttendanceSelector: React.FC<AttendanceSelectorProps> = ({
         onSelectionChange(availableIds);
     };
 
+    const selectRecent = () => {
+        const availableRecentIds = players
+            .filter(p => activePlayerIds.has(p.id) && !playersWhoPlayedToday.has(p.id) && p.isPlayingToday !== false)
+            .map(p => p.id);
+        onSelectionChange(availableRecentIds);
+    };
+
     const selectNone = () => {
         onSelectionChange([]);
     };
@@ -176,6 +183,9 @@ export const AttendanceSelector: React.FC<AttendanceSelectorProps> = ({
             <div className="flex gap-sm mb-md">
                 <button onClick={selectAll} className="btn btn-secondary btn-sm">
                     {t('attendance.selectAll')}
+                </button>
+                <button onClick={selectRecent} className="btn btn-secondary btn-sm">
+                    {t('attendance.selectRecent')}
                 </button>
                 <button onClick={selectNone} className="btn btn-secondary btn-sm">
                     {t('attendance.clearAll')}

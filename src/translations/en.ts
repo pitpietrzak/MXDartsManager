@@ -110,6 +110,7 @@ export const en: Translations = {
     'attendance.description': 'Select players present for today\'s game',
     'attendance.available': 'available',
     'attendance.selectAll': 'Select All Available',
+    'attendance.selectRecent': 'Select All Recent',
     'attendance.clearAll': 'Clear All',
     'attendance.noPlayers': 'No players available. Add players first!',
     'attendance.alreadyPlayed': 'Already played',

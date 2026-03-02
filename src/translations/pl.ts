@@ -110,6 +110,7 @@ export const pl: Translations = {
     'attendance.description': 'Wybierz graczy obecnych na dzisiejszej grze',
     'attendance.available': 'dostępnych',
     'attendance.selectAll': 'Zaznacz wszystkich',
+    'attendance.selectRecent': 'Zaznacz ostatnio aktywnych',
     'attendance.clearAll': 'Wyczyść',
     'attendance.noPlayers': 'Brak dostępnych graczy. Dodaj graczy najpierw!',
     'attendance.alreadyPlayed': 'Już grał',
