@@ -39,7 +39,7 @@ type View = 'dashboard' | 'players' | 'newGame' | 'leaderboard' | 'history' | 'm
 
 function App() {
   const { user, role, loading: authLoading } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [isPasswordReset, setIsPasswordReset] = useState(false);
   const [players, setPlayers] = useState<Player[]>([]);
   const [games, setGames] = useState<DailyGame[]>([]);
@@ -61,6 +61,28 @@ function App() {
     return calculateMonthlyRatings(calculatedStats);
   }, [games]);
 
+  // History/Leaderboard month selector state
+  const [selectedHistoryMonth, setSelectedHistoryMonth] = useState<string>(getCurrentMonth());
+  const [historyGames, setHistoryGames] = useState<DailyGame[]>([]);
+  const [historyStats, setHistoryStats] = useState<ReturnType<typeof calculateMonthlyRatings>>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  // Generate list of months from February 2026 to the current month
+  const availableMonths = useMemo(() => {
+    const months: string[] = [];
+    const now = new Date();
+    const earliest = new Date(2026, 1, 1); // February 2026
+    const cursor = new Date(now.getFullYear(), now.getMonth(), 1);
+    while (cursor >= earliest) {
+      const year = cursor.getFullYear();
+      const month = String(cursor.getMonth() + 1).padStart(2, '0');
+      months.push(`${year}-${month}`);
+      cursor.setMonth(cursor.getMonth() - 1);
+    }
+    return months;
+  }, []);
+
+
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [todaysGames, setTodaysGames] = useState<DailyGame[]>([]);
@@ -77,6 +99,16 @@ function App() {
   const [isEditingGroups, setIsEditingGroups] = useState(false);
 
   const currentMonth = getCurrentMonth();
+
+  // Compute last month string (YYYY-MM)
+  const lastMonth = useMemo(() => {
+    const now = new Date();
+    const d = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  }, []);
+
+  // Darter of last month
+  const [darterOfLastMonth, setDarterOfLastMonth] = useState<{ playerName: string; playerId: string; rating: number } | null>(null);
 
   // Compute which players are recently active (≥3 distinct days played this month)
   const activePlayerIds = useMemo(() => {
@@ -115,15 +147,25 @@ function App() {
     async function loadData() {
       setLoading(true);
       try {
-        const [loadedPlayers, loadedGames, loadedTodaysGames] = await Promise.all([
+        const [loadedPlayers, loadedGames, loadedTodaysGames, lastMonthGames] = await Promise.all([
           loadPlayers(),
           loadMonthGames(currentMonth),
-          getDailyGames()
+          getDailyGames(),
+          loadMonthGames(lastMonth)
         ]);
 
         setPlayers(loadedPlayers);
         setGames(loadedGames);
         setTodaysGames(loadedTodaysGames);
+
+        // Compute darter of last month
+        if (lastMonthGames.length > 0) {
+          const lastMonthStats = calculateMonthlyRatings(calculateStatsFromGames(lastMonthGames));
+          const top = [...lastMonthStats].sort((a, b) => b.rating - a.rating)[0];
+          if (top && top.gamesPlayed > 0) {
+            setDarterOfLastMonth({ playerName: top.playerName, playerId: top.playerId, rating: top.rating });
+          }
+        }
 
         // Calculate stats client-side from completed games
         const calculatedStats = calculateStatsFromGames(loadedGames);
@@ -208,6 +250,42 @@ function App() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentView]);
+
+  // Load history/leaderboard data whenever the selected month changes
+  useEffect(() => {
+    if (currentView !== 'history' && currentView !== 'leaderboard') return;
+
+    // If the selected month is the current month, reuse already-loaded data
+    if (selectedHistoryMonth === currentMonth) {
+      setHistoryGames(games);
+      setHistoryStats(stats);
+      return;
+    }
+
+    // Otherwise fetch from Supabase
+    let cancelled = false;
+    setHistoryLoading(true);
+    loadMonthGames(selectedHistoryMonth).then((loaded) => {
+      if (cancelled) return;
+      setHistoryGames(loaded);
+      const calculatedStats = calculateStatsFromGames(loaded);
+      setHistoryStats(calculateMonthlyRatings(calculatedStats));
+      setHistoryLoading(false);
+    }).catch(() => {
+      if (!cancelled) setHistoryLoading(false);
+    });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedHistoryMonth, currentView]);
+
+  // When switching to history/leaderboard, sync current-month data if selectedHistoryMonth === currentMonth
+  useEffect(() => {
+    if ((currentView === 'history' || currentView === 'leaderboard') && selectedHistoryMonth === currentMonth) {
+      setHistoryGames(games);
+      setHistoryStats(stats);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentView, games, stats]);
 
   const handleAddPlayer = async (name: string) => {
     const newPlayer = await dbAddPlayer(name);
@@ -434,10 +512,7 @@ function App() {
         {currentView === 'dashboard' && (
           <div style={{ display: 'grid', gap: 'var(--spacing-lg)' }}>
             <div className="card fade-in">
-              <h2 style={{ marginBottom: 'var(--spacing-md)' }}>{t('dashboard.welcome')}</h2>
-              <p className="text-muted" style={{ marginBottom: 'var(--spacing-lg)' }}>
-                {t('dashboard.description')}
-              </p>
+              <h2 style={{ marginBottom: 'var(--spacing-md)', textAlign: 'center' }}>{t('dashboard.welcome')}</h2>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--spacing-md)' }}>
                 <div style={{ padding: 'var(--spacing-lg)', background: 'var(--color-bg-secondary)', borderRadius: 'var(--radius-lg)', textAlign: 'center' }}>
@@ -495,8 +570,35 @@ function App() {
               }}
             />
 
+            {darterOfLastMonth && (
+              <div
+                style={{
+                  padding: 'var(--spacing-lg)',
+                  background: 'var(--gradient-primary)',
+                  borderRadius: 'var(--radius-lg)',
+                  textAlign: 'center',
+                }}
+              >
+                <div style={{ fontSize: '2rem', marginBottom: 'var(--spacing-xs)' }}>👑</div>
+                <div style={{ fontSize: '0.8rem', fontWeight: 700, opacity: 0.85, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 'var(--spacing-xs)' }}>
+                  {t('leaderboard.darterOfMonth')} — {new Date(parseInt(lastMonth.split('-')[0]), parseInt(lastMonth.split('-')[1]) - 1).toLocaleDateString(language === 'pl' ? 'pl-PL' : 'en-US', { month: 'long', year: 'numeric' })}
+                </div>
+                <div style={{ fontSize: '1.375rem', fontWeight: 800 }}>{darterOfLastMonth.playerName}</div>
+                <div style={{ fontSize: '0.875rem', fontWeight: 600, opacity: 0.85, marginTop: 'var(--spacing-xs)' }}>
+                  {t('leaderboard.rating')}: {darterOfLastMonth.rating.toFixed(3)}
+                </div>
+              </div>
+            )}
+
             {stats.length > 0 && (
-              <Leaderboard stats={stats} currentMonth={currentMonth} currentPlayerId={userPlayer?.id} players={players} />
+              <Leaderboard
+                stats={stats}
+                currentMonth={currentMonth}
+                currentPlayerId={userPlayer?.id}
+                players={players}
+                darterOfLastMonthId={darterOfLastMonth?.playerId}
+                darterOfLastMonthString={lastMonth}
+              />
             )}
           </div>
         )}
@@ -727,10 +829,16 @@ function App() {
         {
           currentView === 'leaderboard' && (
             <Leaderboard
-              stats={stats}
-              currentMonth={currentMonth}
+              stats={historyStats}
+              currentMonth={selectedHistoryMonth}
               currentPlayerId={userPlayer?.id}
               players={players}
+              selectedMonth={selectedHistoryMonth}
+              availableMonths={availableMonths}
+              onMonthChange={setSelectedHistoryMonth}
+              isLoading={historyLoading}
+              darterOfLastMonthId={darterOfLastMonth?.playerId}
+              darterOfLastMonthString={lastMonth}
             />
           )
         }
@@ -738,10 +846,14 @@ function App() {
         {
           currentView === 'history' && (
             <GameHistory
-              games={games}
+              games={historyGames}
               currentPlayerId={userPlayer?.id}
               role={role}
               onDelete={handleDeleteGame}
+              selectedMonth={selectedHistoryMonth}
+              availableMonths={availableMonths}
+              onMonthChange={setSelectedHistoryMonth}
+              isLoading={historyLoading}
             />
           )
         }

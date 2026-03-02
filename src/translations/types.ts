@@ -164,7 +164,10 @@ export type TranslationKey =
     | 'profile.available'
     | 'game.orderedByLastGames'
     | 'attendance.recentlyActive'
-    | 'attendance.lessActive';
+    | 'attendance.lessActive'
+    | 'common.selectMonth'
+    | 'history.noGamesMonth'
+    | 'common.lastMonth';
 
 export interface Translations {
     [key: string]: string;

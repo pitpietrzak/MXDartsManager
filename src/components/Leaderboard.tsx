@@ -7,10 +7,27 @@ interface LeaderboardProps {
     stats: MonthlyStats[];
     currentMonth: string;
     currentPlayerId?: string;
-    players?: Player[]; // Optional for backward compatibility, but recommended
+    players?: Player[];
+    selectedMonth?: string;
+    availableMonths?: string[];
+    onMonthChange?: (month: string) => void;
+    isLoading?: boolean;
+    darterOfLastMonthId?: string;
+    darterOfLastMonthString?: string;
 }
 
-export const Leaderboard: React.FC<LeaderboardProps> = ({ stats, currentMonth, currentPlayerId, players }) => {
+export const Leaderboard: React.FC<LeaderboardProps> = ({
+    stats,
+    currentMonth,
+    currentPlayerId,
+    players,
+    selectedMonth,
+    availableMonths,
+    onMonthChange,
+    isLoading,
+    darterOfLastMonthId,
+    darterOfLastMonthString,
+}) => {
     const { t, language } = useLanguage();
     const { preferences } = useUserPreferences();
     const sortedStats = [...stats].sort((a, b) => b.rating - a.rating);
@@ -22,7 +39,10 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ stats, currentMonth, c
     const formatMonth = (monthStr: string) => {
         const [year, month] = monthStr.split('-');
         const date = new Date(parseInt(year), parseInt(month) - 1);
-        return date.toLocaleDateString(language === 'pl' ? 'pl-PL' : 'en-US', { month: 'long', year: 'numeric' });
+        return date.toLocaleDateString(language === 'pl' ? 'pl-PL' : 'en-US', {
+            month: 'long',
+            year: 'numeric',
+        });
     };
 
     const getRankEmoji = (rank: number) => {
@@ -38,18 +58,60 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ stats, currentMonth, c
         return `${Math.round((wins / total) * 100)}%`;
     };
 
+    const effectiveSelectedMonth = selectedMonth ?? currentMonth;
+    const selectedMonthFormatted = formatMonth(effectiveSelectedMonth);
+
     return (
         <div className="card fade-in">
             <div className="card-header">
-                <h3 className="card-title">{t('leaderboard.title')}</h3>
-                <p className="text-muted" style={{ margin: 0, fontSize: '0.875rem' }}>
-                    {t('leaderboard.description')} ({formatMonth(currentMonth)})
-                </p>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--spacing-md)' }}>
+                    <div>
+                        <h3 className="card-title">{t('leaderboard.title')}</h3>
+                        <p className="text-muted" style={{ margin: 0, fontSize: '0.875rem' }}>
+                            {t('leaderboard.description')} <strong>{selectedMonthFormatted}</strong>
+                        </p>
+                    </div>
+                    {/* Month selector – only shown when caller provides month picker props */}
+                    {availableMonths && onMonthChange && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
+                            <label
+                                htmlFor="leaderboard-month-select"
+                                style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}
+                            >
+                                {t('common.selectMonth')}:
+                            </label>
+                            <select
+                                id="leaderboard-month-select"
+                                value={effectiveSelectedMonth}
+                                onChange={(e) => onMonthChange(e.target.value)}
+                                style={{
+                                    padding: 'var(--spacing-xs) var(--spacing-sm)',
+                                    borderRadius: 'var(--radius-md)',
+                                    border: '1px solid var(--color-border)',
+                                    background: 'var(--color-bg-secondary)',
+                                    color: 'var(--color-text-primary)',
+                                    fontSize: '0.875rem',
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                {availableMonths.map((m) => (
+                                    <option key={m} value={m}>
+                                        {formatMonth(m)}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+                </div>
             </div>
 
-            {sortedStats.length === 0 ? (
+            {isLoading ? (
                 <p className="text-muted text-center" style={{ padding: 'var(--spacing-xl)' }}>
-                    No games played yet this month. Start playing to see rankings!
+                    {t('common.loading')}
+                </p>
+            ) : sortedStats.length === 0 ? (
+                <p className="text-muted text-center" style={{ padding: 'var(--spacing-xl)' }}>
+                    {t('history.noGamesMonth')} {selectedMonthFormatted}
                 </p>
             ) : (
                 <>
@@ -61,16 +123,14 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ stats, currentMonth, c
                                 background: 'var(--gradient-primary)',
                                 borderRadius: 'var(--radius-lg)',
                                 marginBottom: 'var(--spacing-lg)',
-                                textAlign: 'center'
+                                textAlign: 'center',
                             }}
                         >
                             <div style={{ fontSize: '3rem', marginBottom: 'var(--spacing-sm)' }}>👑</div>
                             <div style={{ fontSize: '0.875rem', fontWeight: 600, opacity: 0.9, marginBottom: 'var(--spacing-xs)' }}>
                                 {t(isCurrentMonth ? 'leaderboard.currentLeader' : 'leaderboard.darterOfMonth')}
                             </div>
-                            <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>
-                                {sortedStats[0].playerName}
-                            </div>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>{sortedStats[0].playerName}</div>
                             <div style={{ fontSize: '1rem', fontWeight: 600, opacity: 0.9, marginTop: 'var(--spacing-xs)' }}>
                                 {t('leaderboard.rating')}: {sortedStats[0].rating.toFixed(3)}
                             </div>
@@ -112,26 +172,49 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ stats, currentMonth, c
                                                 borderBottom: '1px solid var(--color-border)',
                                                 background: isCurrentPlayer
                                                     ? 'rgba(34, 197, 94, 0.15)'
-                                                    : (index < 3 ? 'rgba(245, 158, 11, 0.05)' : 'transparent'),
-                                                transition: 'background var(--transition-fast)'
+                                                    : index < 3
+                                                        ? 'rgba(245, 158, 11, 0.05)'
+                                                        : 'transparent',
+                                                transition: 'background var(--transition-fast)',
                                             }}
                                         >
                                             <td style={{ padding: 'var(--spacing-md)', fontSize: '1rem', fontWeight: 700 }}>
                                                 {getRankEmoji(index + 1)}
                                             </td>
                                             <td style={{ padding: 'var(--spacing-md)', fontWeight: 600 }}>
-                                                {stat.playerName} {players?.find(p => p.id === stat.playerId)?.emoji || ''}
+                                                {stat.playerName} {players?.find((p) => p.id === stat.playerId)?.emoji || ''}
+                                                {darterOfLastMonthId && stat.playerId === darterOfLastMonthId && (
+                                                    <span
+                                                        title={t('leaderboard.darterOfMonth')}
+                                                        style={{
+                                                            marginLeft: 'var(--spacing-sm)',
+                                                            fontSize: '0.65rem',
+                                                            padding: '2px 7px',
+                                                            background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                                                            color: 'white',
+                                                            borderRadius: 'var(--radius-sm)',
+                                                            fontWeight: 700,
+                                                            verticalAlign: 'middle',
+                                                            letterSpacing: '0.03em',
+                                                            boxShadow: '0 1px 4px rgba(245,158,11,0.4)',
+                                                        }}
+                                                    >
+                                                        👑 {darterOfLastMonthString ? formatMonth(darterOfLastMonthString) : t('common.lastMonth')}
+                                                    </span>
+                                                )}
                                                 {isCurrentPlayer && (
-                                                    <span style={{
-                                                        marginLeft: 'var(--spacing-sm)',
-                                                        fontSize: '0.65rem',
-                                                        padding: '2px 6px',
-                                                        background: 'var(--color-accent-primary)',
-                                                        color: 'white',
-                                                        borderRadius: 'var(--radius-sm)',
-                                                        textTransform: 'uppercase',
-                                                        verticalAlign: 'middle'
-                                                    }}>
+                                                    <span
+                                                        style={{
+                                                            marginLeft: 'var(--spacing-sm)',
+                                                            fontSize: '0.65rem',
+                                                            padding: '2px 6px',
+                                                            background: 'var(--color-accent-primary)',
+                                                            color: 'white',
+                                                            borderRadius: 'var(--radius-sm)',
+                                                            textTransform: 'uppercase',
+                                                            verticalAlign: 'middle',
+                                                        }}
+                                                    >
                                                         {t('game.itsYou')}
                                                     </span>
                                                 )}
