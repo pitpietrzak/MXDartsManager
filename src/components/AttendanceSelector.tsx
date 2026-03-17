@@ -8,6 +8,7 @@ interface AttendanceSelectorProps {
     onSelectionChange: (playerIds: string[]) => void;
     playersWhoPlayedToday: Set<string>;
     activePlayerIds: Set<string>;
+    selectedDate: string;
 }
 
 export const AttendanceSelector: React.FC<AttendanceSelectorProps> = ({
@@ -15,10 +16,13 @@ export const AttendanceSelector: React.FC<AttendanceSelectorProps> = ({
     selectedPlayerIds,
     onSelectionChange,
     playersWhoPlayedToday,
-    activePlayerIds
+    activePlayerIds,
+    selectedDate
 }) => {
     const { t } = useLanguage();
     const selectionSet = new Set(selectedPlayerIds);
+
+    const isToday = selectedDate === new Date().toISOString().split('T')[0];
 
     const [activeExpanded, setActiveExpanded] = useState(true);
     const [inactiveExpanded, setInactiveExpanded] = useState(true);
@@ -29,7 +33,7 @@ export const AttendanceSelector: React.FC<AttendanceSelectorProps> = ({
         }
 
         const player = players.find(p => p.id === playerId);
-        if (player && player.isPlayingToday === false) {
+        if (isToday && player && player.isPlayingToday === false) {
             return;
         }
 
@@ -44,14 +48,14 @@ export const AttendanceSelector: React.FC<AttendanceSelectorProps> = ({
 
     const selectAll = () => {
         const availableIds = players
-            .filter(p => !playersWhoPlayedToday.has(p.id) && p.isPlayingToday !== false)
+            .filter(p => !playersWhoPlayedToday.has(p.id) && (!isToday || p.isPlayingToday !== false))
             .map(p => p.id);
         onSelectionChange(availableIds);
     };
 
     const selectRecent = () => {
         const availableRecentIds = players
-            .filter(p => activePlayerIds.has(p.id) && !playersWhoPlayedToday.has(p.id) && p.isPlayingToday !== false)
+            .filter(p => activePlayerIds.has(p.id) && !playersWhoPlayedToday.has(p.id) && (!isToday || p.isPlayingToday !== false))
             .map(p => p.id);
         onSelectionChange(availableRecentIds);
     };
@@ -60,7 +64,7 @@ export const AttendanceSelector: React.FC<AttendanceSelectorProps> = ({
         onSelectionChange([]);
     };
 
-    const availablePlayers = players.filter(p => !playersWhoPlayedToday.has(p.id) && p.isPlayingToday !== false);
+    const availablePlayers = players.filter(p => !playersWhoPlayedToday.has(p.id) && (!isToday || p.isPlayingToday !== false));
 
     // Split players into active and inactive sections
     const activePlayers = players.filter(p => activePlayerIds.has(p.id));
@@ -69,7 +73,7 @@ export const AttendanceSelector: React.FC<AttendanceSelectorProps> = ({
     const renderPlayer = (player: Player) => {
         const hasPlayedToday = playersWhoPlayedToday.has(player.id);
         const isSelected = selectionSet.has(player.id);
-        const isDisabled = hasPlayedToday || player.isPlayingToday === false;
+        const isDisabled = hasPlayedToday || (isToday && player.isPlayingToday === false);
 
         return (
             <label
@@ -94,7 +98,7 @@ export const AttendanceSelector: React.FC<AttendanceSelectorProps> = ({
                         ✅ {t('attendance.alreadyPlayed')}
                     </span>
                 )}
-                {player.isPlayingToday === false && (
+                {isToday && player.isPlayingToday === false && (
                     <span className="badge badge-secondary" style={{ fontSize: '0.75rem' }}>
                         ❌ {t('profile.notPlayingToday')}
                     </span>

@@ -722,6 +722,7 @@ function App() {
                     onSelectionChange={setSelectedPlayerIds}
                     playersWhoPlayedToday={getPlayersWhoPlayedToday()}
                     activePlayerIds={activePlayerIds}
+                    selectedDate={selectedDate}
                   />
 
                   {selectedPlayerIds.length >= 2 && !manualEntry && drawnGroups.length === 0 && (
