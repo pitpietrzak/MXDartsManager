@@ -50,9 +50,11 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
     };
 
     const getRankEmoji = (rank: number) => {
-        if (rank === 1) return '🥇';
-        if (rank === 2) return '🥈';
-        if (rank === 3) return '🥉';
+        if (!isPublicView) {
+            if (rank === 1) return '🥇';
+            if (rank === 2) return '🥈';
+            if (rank === 3) return '🥉';
+        }
         return `${rank}`;
     };
 
@@ -198,7 +200,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
                                                 {getRankEmoji(index + 1)}
                                             </td>
                                             <td style={{ padding: 'var(--spacing-md)', fontWeight: 600 }}>
-                                                {stat.playerName} {players?.find((p) => p.id === stat.playerId)?.emoji || ''}
+                                                {stat.playerName} {!isPublicView && (players?.find((p) => p.id === stat.playerId)?.emoji || '')}
                                                 {darterOfLastMonthId && stat.playerId === darterOfLastMonthId && (
                                                     <span
                                                         title={t('leaderboard.darterOfMonth')}
@@ -215,7 +217,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
                                                             boxShadow: '0 1px 4px rgba(245,158,11,0.4)',
                                                         }}
                                                     >
-                                                        👑 {darterOfLastMonthString ? formatMonth(darterOfLastMonthString) : t('common.lastMonth')}
+                                                        {!isPublicView ? '👑 ' : ''}{darterOfLastMonthString ? formatMonth(darterOfLastMonthString) : t('common.lastMonth')}
                                                     </span>
                                                 )}
                                                 {isCurrentPlayer && (
