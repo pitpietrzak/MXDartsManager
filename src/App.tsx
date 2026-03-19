@@ -469,7 +469,11 @@ function App() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--color-bg-primary)' }}>
+    <div style={{ 
+      height: '100vh', 
+      background: isPublicView ? '#ffffff' : 'var(--color-bg-primary)',
+      overflow: isPublicView ? 'hidden' : 'auto'
+    }}>
       {/* Header */}
       {!isPublicView && (
         <header style={{
@@ -526,11 +530,19 @@ function App() {
       )}
 
       {/* Main Content */}
-      <div className="container" style={{ paddingBottom: 'var(--spacing-2xl)', paddingTop: isPublicView ? 'var(--spacing-xl)' : 0 }}>
+      <div className={isPublicView ? "" : "container"} style={{ 
+        paddingBottom: isPublicView ? 0 : 'var(--spacing-2xl)', 
+        paddingTop: isPublicView ? 'var(--spacing-md)' : 0,
+        width: isPublicView ? '100%' : 'auto',
+        maxWidth: isPublicView ? '100%' : '1200px',
+        margin: isPublicView ? 0 : '0 auto'
+      }}>
         {isPublicView && (
-          <div style={{ textAlign: 'center', marginBottom: 'var(--spacing-xl)' }}>
-            <h1 style={{ color: 'var(--color-accent-primary)', marginBottom: 'var(--spacing-xs)' }}>{t('app.title')}</h1>
-            <p className="text-muted">{t('leaderboard.title')}</p>
+          <div style={{ textAlign: 'center', margin: '5px 0' }}>
+            <h1 style={{ color: '#101828', margin: 0, fontSize: '2rem', fontWeight: 900 }}>{t('app.title')}</h1>
+            <p className="text-muted" style={{ fontSize: '1rem', textTransform: 'uppercase', letterSpacing: '4px', fontWeight: 700 }}>
+              {t('leaderboard.title').replace(/[\u{1F300}-\u{1F9FF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{1F1FF}]/gu, '').trim()}
+            </p>
           </div>
         )}
         {currentView === 'dashboard' && (

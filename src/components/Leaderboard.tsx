@@ -65,17 +65,102 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
     };
 
     const effectiveSelectedMonth = selectedMonth ?? currentMonth;
+    const stripEmojis = (str: string) => str.replace(/[\u{1F300}-\u{1F9FF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F1E6}-\u{1F1FF}]/gu, '').trim();
     const selectedMonthFormatted = formatMonth(effectiveSelectedMonth);
+    const displayTitle = isPublicView ? stripEmojis(t('leaderboard.title')) : t('leaderboard.title');
 
     return (
-        <div className="card fade-in">
-            <div className="card-header">
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--spacing-md)' }}>
+        <div className={`card fade-in ${isPublicView ? 'public-view-card' : ''}`}>
+            {isPublicView && (
+                <style>{`
+                    .public-view-card {
+                        background: #ffffff !important;
+                        padding: 0 var(--spacing-md) !important;
+                        height: 100vh !important;
+                        width: 100vw !important;
+                        display: flex !important;
+                        flex-direction: column !important;
+                        border: none !important;
+                        border-radius: 0 !important;
+                        margin: 0 !important;
+                        max-width: none !important;
+                        overflow: hidden !important;
+                    }
+                    .public-view-table-container {
+                        flex: 1 !important;
+                        min-height: 0 !important;
+                        width: 100% !important;
+                        display: flex !important;
+                        flex-direction: column !important;
+                        overflow: hidden !important;
+                    }
+                    .public-view-table {
+                        width: 100% !important;
+                        height: 100% !important;
+                        border-collapse: collapse !important;
+                        table-layout: fixed !important;
+                        color: #0f172a !important;
+                    }
+                    .public-view-table th {
+                        font-size: 0.9rem !important;
+                        padding: 8px var(--spacing-md) !important;
+                        color: #475569 !important;
+                        border-bottom: 2px solid #e2e8f0 !important;
+                        text-align: center !important;
+                        text-transform: uppercase !important;
+                        background: #f8fafc !important;
+                    }
+                    .public-view-table td {
+                        padding: 4px var(--spacing-md) !important;
+                        vertical-align: middle !important;
+                        text-align: center !important;
+                        border-bottom: 1px solid #f1f5f9 !important;
+                        font-weight: 600 !important;
+                        font-size: 1.25rem !important;
+                        color: #0f172a !important;
+                    }
+                    .rank-1-row {
+                        background-color: #fff9db !important;
+                        border-left: 8px solid #f59e0b !important;
+                    }
+                    .rank-2-row {
+                        background-color: #f1f5f9 !important;
+                        border-left: 8px solid #94a3b8 !important;
+                    }
+                    .rank-3-row {
+                        background-color: #fff4e6 !important;
+                        border-left: 8px solid #d97706 !important;
+                    }
+                    .public-view-table th:nth-child(-n+2), 
+                    .public-view-table td:nth-child(-n+2) {
+                        text-align: left !important;
+                        padding-left: var(--spacing-xl) !important;
+                    }
+                    .public-view-title {
+                        font-size: 1.8rem !important;
+                        color: #1e293b !important;
+                        text-align: left !important;
+                        margin: 10px 0 !important;
+                        text-transform: uppercase !important;
+                        letter-spacing: 2px !important;
+                        font-weight: 900 !important;
+                    }
+                    /* Ensure container takes full height in App.tsx */
+                    html, body, #root {
+                        height: 100% !important;
+                        overflow: hidden !important;
+                    }
+                `}</style>
+            )}
+            <div className="card-header" style={isPublicView ? { borderBottom: 'none', marginBottom: 0, padding: 0 } : {}}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', padding: '0 var(--spacing-md)' }}>
                     <div>
-                        <h3 className="card-title">{t('leaderboard.title')}</h3>
-                        <p className="text-muted" style={{ margin: 0, fontSize: '0.875rem' }}>
-                            {t('leaderboard.description')} <strong>{selectedMonthFormatted}</strong>
-                        </p>
+                        <h3 className={isPublicView ? 'public-view-title' : 'card-title'}>{displayTitle}</h3>
+                        {!isPublicView && (
+                            <p className="text-muted" style={{ margin: 0, fontSize: '0.875rem' }}>
+                                {t('leaderboard.description')} <strong>{selectedMonthFormatted}</strong>
+                            </p>
+                        )}
                     </div>
                     {/* Actions & Month selector */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)' }}>
@@ -156,8 +241,8 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
                     )}
 
                     {/* Rankings Table */}
-                    <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <div className={isPublicView ? 'public-view-table-container' : ''} style={{ overflowX: 'auto' }}>
+                        <table className={isPublicView ? 'public-view-table' : ''} style={{ width: '100%', borderCollapse: 'collapse' }}>
                             <thead>
                                 <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
                                     <th style={{ padding: 'var(--spacing-sm)', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>
@@ -186,13 +271,16 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
                                     return (
                                         <tr
                                             key={stat.playerId}
+                                            className={isPublicView ? (index === 0 ? 'rank-1-row' : index === 1 ? 'rank-2-row' : index === 2 ? 'rank-3-row' : '') : ''}
                                             style={{
                                                 borderBottom: '1px solid var(--color-border)',
-                                                background: isCurrentPlayer
-                                                    ? 'rgba(34, 197, 94, 0.15)'
-                                                    : index < 3
-                                                        ? 'rgba(245, 158, 11, 0.05)'
-                                                        : 'transparent',
+                                                background: isPublicView 
+                                                    ? '' 
+                                                    : (isCurrentPlayer
+                                                        ? 'rgba(34, 197, 94, 0.15)'
+                                                        : index < 3
+                                                            ? 'rgba(245, 158, 11, 0.05)'
+                                                            : 'transparent'),
                                                 transition: 'background var(--transition-fast)',
                                             }}
                                         >
