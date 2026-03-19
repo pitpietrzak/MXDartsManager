@@ -168,6 +168,14 @@ export type TranslationKey =
     | 'attendance.lessActive'
     | 'common.selectMonth'
     | 'history.noGamesMonth'
+    | 'manual.addAll'
+    | 'nav.printTable'
+    | 'print.title'
+    | 'print.selectMonth'
+    | 'print.selectPlayers'
+    | 'print.generate'
+    | 'print.print'
+    | 'print.date'
     | 'common.lastMonth';
 
 export interface Translations {
