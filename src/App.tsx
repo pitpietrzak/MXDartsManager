@@ -13,6 +13,7 @@ import { UserMenu } from './components/UserMenu';
 import { RoleManager } from './components/RoleManager';
 import { TodaysGames } from './components/TodaysGames';
 import { ManualGroupCreator } from './components/ManualGroupCreator';
+import { PrintableTable } from './components/PrintableTable';
 import { PlayerClaimDialog } from './components/PlayerClaimDialog';
 import { MyProfile } from './components/MyProfile';
 import { useAuth } from './contexts/AuthContext';
@@ -35,7 +36,7 @@ import { getPreviousGameday } from './utils/groupOrderer';
 import './index.css';
 
 
-type View = 'dashboard' | 'players' | 'newGame' | 'leaderboard' | 'history' | 'myProfile';
+type View = 'dashboard' | 'players' | 'newGame' | 'leaderboard' | 'history' | 'myProfile' | 'printTable';
 
 function App() {
   const { user, role, loading: authLoading } = useAuth();
@@ -97,6 +98,16 @@ function App() {
   );
   const [manualEntry, setManualEntry] = useState(false);
   const [isEditingGroups, setIsEditingGroups] = useState(false);
+  const [isPublicView, setIsPublicView] = useState(false);
+
+  // Check for public view on initial load
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('view') === 'results' || params.get('view') === 'public') {
+      setIsPublicView(true);
+      setCurrentView('leaderboard');
+    }
+  }, []);
 
   const currentMonth = getCurrentMonth();
 
@@ -423,7 +434,7 @@ function App() {
   }
 
   // Show login if not authenticated
-  if (!user) {
+  if (!user && !isPublicView) {
     return <Login />;
   }
 
@@ -460,60 +471,68 @@ function App() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--color-bg-primary)' }}>
       {/* Header */}
-      <header style={{
-        background: 'var(--color-bg-secondary)',
-        borderBottom: '2px solid var(--color-border)',
-        padding: 'var(--spacing-lg) 0',
-        marginBottom: 'var(--spacing-xl)',
-        boxShadow: 'var(--shadow-lg)'
-      }}>
-        <div className="container">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--spacing-md)' }}>
-            <div className="flex items-center gap-md" style={{ flexWrap: 'wrap' }}>
-              <button onClick={() => setCurrentView('dashboard')} className={currentView === 'dashboard' ? 'btn btn-primary' : 'btn btn-secondary'}>
-                {t('nav.dashboard')}
-              </button>
-              {canAccessView('players') && (
-                <button onClick={() => setCurrentView('players')} className={currentView === 'players' ? 'btn btn-primary' : 'btn btn-secondary'}>
-                  {t('nav.players')}
+      {!isPublicView && (
+        <header style={{
+          background: 'var(--color-bg-secondary)',
+          borderBottom: '2px solid var(--color-border)',
+          padding: 'var(--spacing-lg) 0',
+          marginBottom: 'var(--spacing-xl)',
+          boxShadow: 'var(--shadow-lg)'
+        }}>
+          <div className="container">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--spacing-md)' }}>
+              <div className="flex items-center gap-md" style={{ flexWrap: 'wrap' }}>
+                <button onClick={() => setCurrentView('dashboard')} className={currentView === 'dashboard' ? 'btn btn-primary' : 'btn btn-secondary'}>
+                  {t('nav.dashboard')}
                 </button>
-              )}
-              {canAccessView('newGame') && (
-                <button
-                  onClick={() => {
-                    setCurrentView('newGame');
-                    // Auto-load today's groups if available
-                    if (todaysGames.length > 0 && selectedDate === new Date().toISOString().split('T')[0]) {
-                      const allGroups = todaysGames.flatMap(g => g.groups);
-                      setDrawnGroups(allGroups);
-                      const playerIds = allGroups.flatMap(g => g.players.map(p => p.id));
-                      setSelectedPlayerIds(playerIds);
-                    }
-                  }}
-                  className={currentView === 'newGame' ? 'btn btn-primary' : 'btn btn-secondary'}
-                >
-                  {t('nav.newGame')}
+                {canAccessView('players') && (
+                  <button onClick={() => setCurrentView('players')} className={currentView === 'players' ? 'btn btn-primary' : 'btn btn-secondary'}>
+                    {t('nav.players')}
+                  </button>
+                )}
+                {canAccessView('newGame') && (
+                  <button
+                    onClick={() => {
+                      setCurrentView('newGame');
+                      // Auto-load today's groups if available
+                      if (todaysGames.length > 0 && selectedDate === new Date().toISOString().split('T')[0]) {
+                        const allGroups = todaysGames.flatMap(g => g.groups);
+                        setDrawnGroups(allGroups);
+                        const playerIds = allGroups.flatMap(g => g.players.map(p => p.id));
+                        setSelectedPlayerIds(playerIds);
+                      }
+                    }}
+                    className={currentView === 'newGame' ? 'btn btn-primary' : 'btn btn-secondary'}
+                  >
+                    {t('nav.newGame')}
+                  </button>
+                )}
+                <button onClick={() => setCurrentView('leaderboard')} className={currentView === 'leaderboard' ? 'btn btn-primary' : 'btn btn-secondary'}>
+                  {t('nav.leaderboard')}
                 </button>
-              )}
-              <button onClick={() => setCurrentView('leaderboard')} className={currentView === 'leaderboard' ? 'btn btn-primary' : 'btn btn-secondary'}>
-                {t('nav.leaderboard')}
-              </button>
-              <button onClick={() => setCurrentView('history')} className={currentView === 'history' ? 'btn btn-primary' : 'btn btn-secondary'}>
-                {t('nav.history')}
-              </button>
-            </div>
-            <div className="flex items-center gap-md">
-              <UserMenu
-                userPlayer={userPlayer}
-                onNavigateToProfile={() => setCurrentView('myProfile')}
-              />
+                <button onClick={() => setCurrentView('history')} className={currentView === 'history' ? 'btn btn-primary' : 'btn btn-secondary'}>
+                  {t('nav.history')}
+                </button>
+              </div>
+              <div className="flex items-center gap-md">
+                <UserMenu
+                  userPlayer={userPlayer}
+                  onNavigateToProfile={() => setCurrentView('myProfile')}
+                />
+              </div>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
+      )}
 
       {/* Main Content */}
-      <div className="container" style={{ paddingBottom: 'var(--spacing-2xl)' }}>
+      <div className="container" style={{ paddingBottom: 'var(--spacing-2xl)', paddingTop: isPublicView ? 'var(--spacing-xl)' : 0 }}>
+        {isPublicView && (
+          <div style={{ textAlign: 'center', marginBottom: 'var(--spacing-xl)' }}>
+            <h1 style={{ color: 'var(--color-accent-primary)', marginBottom: 'var(--spacing-xs)' }}>{t('app.title')}</h1>
+            <p className="text-muted">{t('leaderboard.title')}</p>
+          </div>
+        )}
         {currentView === 'dashboard' && (
           <div style={{ display: 'grid', gap: 'var(--spacing-lg)' }}>
             <div className="card fade-in">
@@ -603,6 +622,7 @@ function App() {
                 players={players}
                 darterOfLastMonthId={darterOfLastMonth?.playerId}
                 darterOfLastMonthString={lastMonth}
+                onPrintClick={(role === 'admin' || role === 'game_manager') ? () => setCurrentView('printTable') : undefined}
               />
             )}
           </div>
@@ -845,6 +865,8 @@ function App() {
               isLoading={historyLoading}
               darterOfLastMonthId={darterOfLastMonth?.playerId}
               darterOfLastMonthString={lastMonth}
+              isPublicView={isPublicView}
+              onPrintClick={(role === 'admin' || role === 'game_manager') ? () => setCurrentView('printTable') : undefined}
             />
           )
         }
@@ -871,6 +893,13 @@ function App() {
             todaysGames={todaysGames}
             gameHistory={userGameHistory}
             currentMonth={currentMonth}
+          />
+        )}
+
+        {currentView === 'printTable' && (role === 'admin' || role === 'game_manager') && (
+          <PrintableTable
+            players={players}
+            availableMonths={availableMonths}
           />
         )}
       </div>

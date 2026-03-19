@@ -59,6 +59,18 @@ export const ManualGroupCreator: React.FC<ManualGroupCreatorProps> = ({
         }
     };
 
+    const addAllUnassignedToGroup = (groupIndex: number) => {
+        const unassigned = unassignedPlayers;
+        if (unassigned.length === 0) return;
+
+        const newGroups = [...groups];
+        newGroups[groupIndex] = {
+            ...newGroups[groupIndex],
+            players: [...newGroups[groupIndex].players, ...unassigned]
+        };
+        setGroups(newGroups);
+    };
+
     const removePlayerFromGroup = (groupIndex: number, playerId: string) => {
         const newGroups = [...groups];
         newGroups[groupIndex] = {
@@ -163,25 +175,35 @@ export const ManualGroupCreator: React.FC<ManualGroupCreatorProps> = ({
                         </div>
 
                         {unassignedPlayers.length > 0 && (
-                            <select
-                                onChange={(e) => {
-                                    const player = presentPlayers.find(p => p.id === e.target.value);
-                                    if (player) {
-                                        addPlayerToGroup(groupIndex, player);
-                                        e.target.value = '';
-                                    }
-                                }}
-                                className="input"
-                                style={{ fontSize: '0.875rem' }}
-                                defaultValue=""
-                            >
-                                <option value="" disabled>{t('manual.addPlayer')}</option>
-                                {unassignedPlayers.map(player => (
-                                    <option key={player.id} value={player.id}>
-                                        {player.name}
-                                    </option>
-                                ))}
-                            </select>
+                            <div style={{ display: 'flex', gap: 'var(--spacing-xs)' }}>
+                                <select
+                                    onChange={(e) => {
+                                        const player = presentPlayers.find(p => p.id === e.target.value);
+                                        if (player) {
+                                            addPlayerToGroup(groupIndex, player);
+                                            e.target.value = '';
+                                        }
+                                    }}
+                                    className="input"
+                                    style={{ fontSize: '0.875rem', flex: 1 }}
+                                    defaultValue=""
+                                >
+                                    <option value="" disabled>{t('manual.addPlayer')}</option>
+                                    {unassignedPlayers.map(player => (
+                                        <option key={player.id} value={player.id}>
+                                            {player.name}
+                                        </option>
+                                    ))}
+                                </select>
+                                <button
+                                    onClick={() => addAllUnassignedToGroup(groupIndex)}
+                                    className="btn btn-secondary"
+                                    style={{ padding: '0 12px', fontSize: '0.875rem', whiteSpace: 'nowrap' }}
+                                    title={t('manual.addAll')}
+                                >
+                                    {t('manual.addAll')}
+                                </button>
+                            </div>
                         )}
                     </div>
                 ))}

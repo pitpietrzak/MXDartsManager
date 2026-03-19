@@ -9,6 +9,7 @@ export const pl: Translations = {
     'nav.leaderboard': '🏆 Ranking',
     'nav.history': '📜 Historia',
     'nav.profile': '🏅 Mój Profil',
+    'nav.printTable': '🖨️ Arkusz do druku',
     'auth.signIn': 'Zaloguj się',
     'auth.signUp': 'Zarejestruj się',
     'auth.email': 'Email',
@@ -125,6 +126,7 @@ export const pl: Translations = {
     'manual.title': '✏️ Ręczne Tworzenie Grup',
     'manual.description': 'Ręcznie przypisz graczy do grup',
     'manual.addPlayer': '+ Dodaj gracza...',
+    'manual.addAll': 'Dodaj wszystkich nieprzypisanych',
     'manual.addGroup': '➕ Dodaj Grupę',
     'manual.saveGroups': '✅ Zapisz Grupy',
     'manual.editGroups': '✏️ Edytuj Grupy',
@@ -170,5 +172,11 @@ export const pl: Translations = {
     'profile.available': 'Dostępny',
     'game.orderedByLastGames': 'Kolejność graczy wg ostatnich gier',
     'attendance.recentlyActive': '🟢 Ostatnio aktywni',
-    'attendance.lessActive': '💤 Mniej aktywni'
+    'attendance.lessActive': '💤 Mniej aktywni',
+    'print.title': 'Arkusz do gier (do druku)',
+    'print.selectMonth': 'Wybierz miesiąc',
+    'print.selectPlayers': 'Wybierz graczy',
+    'print.generate': 'Generuj Tabelę',
+    'print.print': 'Drukuj',
+    'print.date': 'Data'
 };

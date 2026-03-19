@@ -9,6 +9,7 @@ export const en: Translations = {
     'nav.leaderboard': '🏆 Leaderboard',
     'nav.history': '📜 History',
     'nav.profile': '🏅 My Profile',
+    'nav.printTable': '🖨️ Print Sheet',
     'auth.signIn': 'Sign In',
     'auth.signUp': 'Sign Up',
     'auth.email': 'Email',
@@ -125,6 +126,7 @@ export const en: Translations = {
     'manual.title': '✏️ Manual Group Creation',
     'manual.description': 'Manually assign players to groups',
     'manual.addPlayer': '+ Add player...',
+    'manual.addAll': 'Add all unassigned',
     'manual.addGroup': '➕ Add Group',
     'manual.saveGroups': '✅ Save Groups',
     'manual.editGroups': '✏️ Edit Groups',
@@ -170,5 +172,11 @@ export const en: Translations = {
     'profile.available': 'Available',
     'game.orderedByLastGames': 'Players ordered by last games',
     'attendance.recentlyActive': '🟢 Recently Active',
-    'attendance.lessActive': '💤 Less Active'
+    'attendance.lessActive': '💤 Less Active',
+    'print.title': 'Printable Game Sheet',
+    'print.selectMonth': 'Select Month',
+    'print.selectPlayers': 'Select Players',
+    'print.generate': 'Generate Table',
+    'print.print': 'Print',
+    'print.date': 'Date'
 };
