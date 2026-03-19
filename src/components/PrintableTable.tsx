@@ -30,8 +30,44 @@ export const PrintableTable: React.FC<PrintableTableProps> = ({ players, availab
         return days;
     }, [selectedMonth]);
 
+    const densityStyles = useMemo(() => {
+        const playerCount = selectedPlayers.length;
+        const dayCount = monthDays.length;
+        
+        // Thresholds for scaling
+        let fontSize = '10pt';
+        let padding = '6px 4px';
+        let wlWidth = '35px';
+        let nameFontSize = '11pt';
+        let dateWidth = '130px';
+
+        if (playerCount > 6 || dayCount > 21) {
+            fontSize = '9pt';
+            padding = '4px 3px';
+            wlWidth = '30px';
+            nameFontSize = '10pt';
+            dateWidth = '110px';
+        }
+        
+        if (playerCount > 10) {
+            fontSize = '8pt';
+            padding = '3px 2px';
+            wlWidth = '25px';
+            nameFontSize = '9pt';
+            dateWidth = '100px';
+        }
+
+        return {
+            '--print-font-size': fontSize,
+            '--print-padding': padding,
+            '--print-wl-width': wlWidth,
+            '--print-name-font-size': nameFontSize,
+            '--print-date-width': dateWidth,
+        } as React.CSSProperties;
+    }, [selectedPlayers.length, monthDays.length]);
+
     const handleTogglePlayer = (id: string) => {
-        setSelectedPlayerIds(prev => 
+        setSelectedPlayerIds(prev =>
             prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]
         );
     };
@@ -44,14 +80,14 @@ export const PrintableTable: React.FC<PrintableTableProps> = ({ players, availab
         <div className="card fade-in">
             <div className="no-print">
                 <h2 style={{ marginBottom: 'var(--spacing-md)' }}>{t('print.title')}</h2>
-                
+
                 <div style={{ display: 'grid', gap: 'var(--spacing-lg)', marginBottom: 'var(--spacing-xl)' }}>
                     <div>
                         <label className="text-muted" style={{ display: 'block', marginBottom: 'var(--spacing-xs)', fontSize: '0.875rem' }}>
                             {t('print.selectMonth')}
                         </label>
-                        <select 
-                            value={selectedMonth} 
+                        <select
+                            value={selectedMonth}
                             onChange={(e) => setSelectedMonth(e.target.value)}
                             className="input"
                             style={{ maxWidth: '300px' }}
@@ -66,9 +102,9 @@ export const PrintableTable: React.FC<PrintableTableProps> = ({ players, availab
                         <label className="text-muted" style={{ display: 'block', marginBottom: 'var(--spacing-sm)', fontSize: '0.875rem' }}>
                             {t('print.selectPlayers')} ({selectedPlayerIds.length})
                         </label>
-                        <div style={{ 
-                            display: 'grid', 
-                            gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', 
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
                             gap: 'var(--spacing-xs)',
                             maxHeight: '200px',
                             overflowY: 'auto',
@@ -76,13 +112,13 @@ export const PrintableTable: React.FC<PrintableTableProps> = ({ players, availab
                             background: 'var(--color-bg-secondary)',
                             borderRadius: 'var(--radius-md)'
                         }}>
-                            {players.sort((a,b) => a.name.localeCompare(b.name)).map(player => (
-                                <label 
-                                    key={player.id} 
-                                    style={{ 
-                                        display: 'flex', 
-                                        alignItems: 'center', 
-                                        gap: '8px', 
+                            {players.sort((a, b) => a.name.localeCompare(b.name)).map(player => (
+                                <label
+                                    key={player.id}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
                                         fontSize: '0.875rem',
                                         cursor: 'pointer',
                                         padding: '4px',
@@ -90,8 +126,8 @@ export const PrintableTable: React.FC<PrintableTableProps> = ({ players, availab
                                         background: selectedPlayerIds.includes(player.id) ? 'var(--color-bg-tertiary)' : 'transparent'
                                     }}
                                 >
-                                    <input 
-                                        type="checkbox" 
+                                    <input
+                                        type="checkbox"
                                         checked={selectedPlayerIds.includes(player.id)}
                                         onChange={() => handleTogglePlayer(player.id)}
                                     />
@@ -111,7 +147,7 @@ export const PrintableTable: React.FC<PrintableTableProps> = ({ players, availab
 
             {/* Printable Area */}
             {selectedPlayerIds.length > 0 && (
-                <div className="printable-sheet">
+                <div className="printable-sheet" style={densityStyles}>
                     <style>{`
                         @media screen {
                             .printable-sheet {
@@ -128,42 +164,52 @@ export const PrintableTable: React.FC<PrintableTableProps> = ({ players, availab
                         @media print {
                             @page {
                                 size: A4 landscape;
-                                margin: 5mm;
+                                margin: 3mm;
                             }
-                            body {
+                            html, body {
                                 background: white !important;
                                 padding: 0 !important;
                                 margin: 0 !important;
+                                height: 100%;
+                                overflow: hidden;
                             }
-                            .no-print, header, footer, .container > header, .btn, .card-header, .title-banner {
+                            .no-print, header, footer, .container > header, .btn, .card-header, .title-banner.no-print {
                                 display: none !important;
                             }
                             .printable-sheet {
                                 visibility: visible !important;
-                                position: absolute;
-                                left: 0;
-                                top: 0;
+                                position: relative;
                                 width: 100%;
+                                height: calc(210mm - 10mm); /* Stretch to fit A4 landscape height */
+                                display: flex;
+                                flex-direction: column;
+                                page-break-after: avoid;
+                                break-after: avoid;
+                                overflow: hidden;
                             }
                             .card {
                                 border: none !important;
                                 box-shadow: none !important;
                                 background: transparent !important;
                                 padding: 0 !important;
+                                margin: 0 !important;
                             }
                         }
                         
                         .print-table {
                             width: 100%;
+                            height: 100%;
+                            flex: 1;
                             border-collapse: collapse;
                             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                            font-size: 10pt;
+                            font-size: var(--print-font-size);
                             color: black;
+                            table-layout: auto;
                         }
 
                         .print-table th, .print-table td {
                             border: 1.5px solid #333;
-                            padding: 6px 4px;
+                            padding: var(--print-padding);
                             text-align: center;
                         }
 
@@ -188,18 +234,18 @@ export const PrintableTable: React.FC<PrintableTableProps> = ({ players, availab
                         }
 
                         .player-name {
-                            font-size: 11pt;
+                            font-size: var(--print-name-font-size);
                             white-space: nowrap;
-                            min-width: 80px;
+                            min-width: 60px;
                         }
 
                         .date-col {
                             text-align: left;
-                            padding-left: 10px;
+                            padding-left: 8px;
                             font-weight: 600;
                             background-color: #f8f9fa !important;
                             white-space: nowrap;
-                            width: 130px;
+                            width: var(--print-date-width);
                         }
 
                         .index-col {
@@ -216,7 +262,7 @@ export const PrintableTable: React.FC<PrintableTableProps> = ({ players, availab
                         }
 
                         .wl-cell {
-                            width: 35px;
+                            width: var(--print-wl-width);
                             background-color: white !important;
                         }
 
@@ -227,7 +273,7 @@ export const PrintableTable: React.FC<PrintableTableProps> = ({ players, availab
 
                         .title-banner h1 {
                             margin: 0;
-                            font-size: 24pt;
+                            font-size: 18pt;
                             color: #2f5597;
                         }
 
@@ -239,8 +285,8 @@ export const PrintableTable: React.FC<PrintableTableProps> = ({ players, availab
                     `}</style>
 
                     <div className="title-banner no-print">
-                         <h3 style={{ margin: 0, color: 'var(--color-accent-primary)' }}>{t('print.title')}</h3>
-                         <p style={{ margin: 0, fontSize: '0.875rem' }}>{selectedMonth}</p>
+                        <h3 style={{ margin: 0, color: 'var(--color-accent-primary)' }}>{t('print.title')}</h3>
+                        <p style={{ margin: 0, fontSize: '0.875rem' }}>{selectedMonth}</p>
                     </div>
 
                     <table className="print-table">
@@ -251,8 +297,8 @@ export const PrintableTable: React.FC<PrintableTableProps> = ({ players, availab
                                 </th>
                             </tr>
                             <tr className="header-row-2">
-                                <th style={{ width: '40px' }}>#</th>
-                                <th style={{ width: '130px' }}>{t('print.date')}</th>
+                                <th style={{ width: '30px' }}>#</th>
+                                <th style={{ width: 'var(--print-date-width)' }}>{t('print.date')}</th>
                                 {selectedPlayers.map(player => (
                                     <th key={player.id} colSpan={2} className="player-name">
                                         {player.name}
@@ -260,7 +306,8 @@ export const PrintableTable: React.FC<PrintableTableProps> = ({ players, availab
                                 ))}
                             </tr>
                             <tr className="header-row-3">
-                                <td colSpan={2} className="wl-header-label">W / L:</td>
+                                <td className="empty-header-label"></td>
+                                <td className="wl-header-label">W / L:</td>
                                 {selectedPlayers.map(player => (
                                     <React.Fragment key={player.id}>
                                         <td className="wl-cell">W</td>

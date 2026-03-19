@@ -14,6 +14,8 @@ interface LeaderboardProps {
     isLoading?: boolean;
     darterOfLastMonthId?: string;
     darterOfLastMonthString?: string;
+    onPrintClick?: () => void;
+    isPublicView?: boolean;
 }
 
 export const Leaderboard: React.FC<LeaderboardProps> = ({
@@ -27,6 +29,8 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
     isLoading,
     darterOfLastMonthId,
     darterOfLastMonthString,
+    onPrintClick,
+    isPublicView,
 }) => {
     const { t, language } = useLanguage();
     const { preferences } = useUserPreferences();
@@ -71,37 +75,49 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
                             {t('leaderboard.description')} <strong>{selectedMonthFormatted}</strong>
                         </p>
                     </div>
-                    {/* Month selector – only shown when caller provides month picker props */}
-                    {availableMonths && onMonthChange && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
-                            <label
-                                htmlFor="leaderboard-month-select"
-                                style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}
+                    {/* Actions & Month selector */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)' }}>
+                        {onPrintClick && !isPublicView && (
+                            <button
+                                onClick={onPrintClick}
+                                className="btn btn-secondary btn-sm"
+                                style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-xs)' }}
+                                title={t('print.title')}
                             >
-                                {t('common.selectMonth')}:
-                            </label>
-                            <select
-                                id="leaderboard-month-select"
-                                value={effectiveSelectedMonth}
-                                onChange={(e) => onMonthChange(e.target.value)}
-                                style={{
-                                    padding: 'var(--spacing-xs) var(--spacing-sm)',
-                                    borderRadius: 'var(--radius-md)',
-                                    border: '1px solid var(--color-border)',
-                                    background: 'var(--color-bg-secondary)',
-                                    color: 'var(--color-text-primary)',
-                                    fontSize: '0.875rem',
-                                    cursor: 'pointer',
-                                }}
-                            >
-                                {availableMonths.map((m) => (
-                                    <option key={m} value={m}>
-                                        {formatMonth(m)}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                    )}
+                                🖨️ <span className="hide-mobile">{t('print.title')}</span>
+                            </button>
+                        )}
+                        {availableMonths && onMonthChange && !isPublicView && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
+                                <label
+                                    htmlFor="leaderboard-month-select"
+                                    style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}
+                                >
+                                    {t('common.selectMonth')}:
+                                </label>
+                                <select
+                                    id="leaderboard-month-select"
+                                    value={effectiveSelectedMonth}
+                                    onChange={(e) => onMonthChange(e.target.value)}
+                                    style={{
+                                        padding: 'var(--spacing-xs) var(--spacing-sm)',
+                                        borderRadius: 'var(--radius-md)',
+                                        border: '1px solid var(--color-border)',
+                                        background: 'var(--color-bg-secondary)',
+                                        color: 'var(--color-text-primary)',
+                                        fontSize: '0.875rem',
+                                        cursor: 'pointer',
+                                    }}
+                                >
+                                    {availableMonths.map((m) => (
+                                        <option key={m} value={m}>
+                                            {formatMonth(m)}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -116,7 +132,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
             ) : (
                 <>
                     {/* Darter of the Month */}
-                    {sortedStats.length > 0 && sortedStats[0].gamesPlayed > 0 && (
+                    {sortedStats.length > 0 && sortedStats[0].gamesPlayed > 0 && !isPublicView && (
                         <div
                             style={{
                                 padding: 'var(--spacing-lg)',

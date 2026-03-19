@@ -513,11 +513,6 @@ function App() {
                 <button onClick={() => setCurrentView('history')} className={currentView === 'history' ? 'btn btn-primary' : 'btn btn-secondary'}>
                   {t('nav.history')}
                 </button>
-                {(role === 'admin' || role === 'game_manager') && (
-                  <button onClick={() => setCurrentView('printTable')} className={currentView === 'printTable' ? 'btn btn-primary' : 'btn btn-secondary'}>
-                    {t('nav.printTable')}
-                  </button>
-                )}
               </div>
               <div className="flex items-center gap-md">
                 <UserMenu
@@ -627,6 +622,7 @@ function App() {
                 players={players}
                 darterOfLastMonthId={darterOfLastMonth?.playerId}
                 darterOfLastMonthString={lastMonth}
+                onPrintClick={(role === 'admin' || role === 'game_manager') ? () => setCurrentView('printTable') : undefined}
               />
             )}
           </div>
@@ -869,6 +865,8 @@ function App() {
               isLoading={historyLoading}
               darterOfLastMonthId={darterOfLastMonth?.playerId}
               darterOfLastMonthString={lastMonth}
+              isPublicView={isPublicView}
+              onPrintClick={(role === 'admin' || role === 'game_manager') ? () => setCurrentView('printTable') : undefined}
             />
           )
         }
