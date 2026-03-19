@@ -153,7 +153,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
                 `}</style>
             )}
             <div className="card-header" style={isPublicView ? { borderBottom: 'none', marginBottom: 0, padding: 0 } : {}}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', padding: '0 var(--spacing-md)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: isPublicView ? 'flex-start' : 'space-between', padding: isPublicView ? '0 var(--spacing-md)' : 0 }}>
                     <div>
                         <h3 className={isPublicView ? 'public-view-title' : 'card-title'}>{displayTitle}</h3>
                         {!isPublicView && (
