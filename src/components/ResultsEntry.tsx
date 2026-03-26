@@ -9,17 +9,27 @@ interface ResultsEntryProps {
     onResultsSubmit: (groups: Group[]) => void;
     onGroupSubmit?: (groupId: string, results: GameResult[]) => Promise<void>;
     currentUserId?: string;
+    date?: string;
 }
 
 export const ResultsEntry: React.FC<ResultsEntryProps> = ({
     groups,
     onResultsSubmit,
     onGroupSubmit,
-    currentUserId
+    currentUserId,
+    date
 }) => {
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const { preferences } = useUserPreferences();
     const [groupResults, setGroupResults] = useState<Map<string, GameResult[]>>(new Map());
+
+    // Format date for display
+    const formattedDate = date ? new Date(date).toLocaleDateString(language === 'pl' ? 'pl-PL' : 'en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+    }) : null;
 
     // Override currentUserId if highlighting is disabled
     const effectiveUserId = preferences.highlightYourGames ? currentUserId : null;
@@ -128,7 +138,19 @@ export const ResultsEntry: React.FC<ResultsEntryProps> = ({
     return (
         <div className="card fade-in">
             <div className="card-header">
-                <h3 className="card-title">{t('results.title')}</h3>
+                <div>
+                    <h3 className="card-title">{t('results.title')}</h3>
+                    {formattedDate && (
+                        <p style={{
+                            margin: '4px 0 0 0',
+                            fontSize: '0.9rem',
+                            color: 'var(--color-accent-primary)',
+                            fontWeight: 600
+                        }}>
+                            📅 {formattedDate}
+                        </p>
+                    )}
+                </div>
                 <p className="text-muted" style={{ margin: 0, fontSize: '0.875rem' }}>
                     {t('results.instruction')}
                 </p>

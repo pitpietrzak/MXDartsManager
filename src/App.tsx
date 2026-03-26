@@ -25,6 +25,7 @@ import {
   loadMonthGames,
   deleteGame as dbDeleteGame,
   getDailyGames,
+  getPendingGames,
   getCurrentMonth,
   linkPlayerToUser,
   getUserGameHistory,
@@ -162,16 +163,16 @@ function App() {
     async function loadData() {
       setLoading(true);
       try {
-        const [loadedPlayers, loadedGames, loadedTodaysGames, lastMonthGamesData] = await Promise.all([
+        const [loadedPlayers, loadedGames, loadedPendingGames, lastMonthGamesData] = await Promise.all([
           loadPlayers(),
           loadMonthGames(currentMonth),
-          getDailyGames(),
+          getPendingGames(),
           loadMonthGames(lastMonth)
         ]);
 
         setPlayers(loadedPlayers);
         setGames(loadedGames);
-        setTodaysGames(loadedTodaysGames);
+        setTodaysGames(loadedPendingGames);
         setLastMonthGames(lastMonthGamesData);
 
         // Compute darter of last month
@@ -227,15 +228,15 @@ function App() {
   // Reload data helper
   const reloadData = async () => {
     try {
-      const [loadedPlayers, loadedGames, loadedTodaysGames] = await Promise.all([
+      const [loadedPlayers, loadedGames, loadedPendingGames] = await Promise.all([
         loadPlayers(),
         loadMonthGames(currentMonth),
-        getDailyGames()
+        getPendingGames()
       ]);
 
       setPlayers(loadedPlayers);
       setGames(loadedGames);
-      setTodaysGames(loadedTodaysGames);
+      setTodaysGames(loadedPendingGames);
 
       const calculatedStats = calculateStatsFromGames(loadedGames);
       const statsWithRatings = calculateMonthlyRatings(calculatedStats);
@@ -587,21 +588,21 @@ function App() {
               games={todaysGames}
               currentUserId={userPlayer?.id || null}
               role={role}
-              onNavigateToResults={() => {
-                // Load the existing games groups into state
-                if (todaysGames.length > 0) {
-                  // Flatten groups from all games
-                  const allGroups = todaysGames.flatMap(g => g.groups);
-                  setDrawnGroups(allGroups);
+              onCancelGame={handleDeleteGame}
+              onNavigateToResults={(date) => {
+                // If date is provided, set it. Otherwise fallback to first game's date
+                const targetDate = date || (todaysGames[0]?.date) || new Date().toISOString().split('T')[0];
+                setSelectedDate(targetDate);
 
-                  if (todaysGames[0]) {
-                    setSelectedDate(todaysGames[0].date);
-                  }
+                // Load the groups for the target date
+                const gamesForDate = todaysGames.filter(g => g.date === targetDate);
+                const allGroups = gamesForDate.flatMap(g => g.groups);
+                setDrawnGroups(allGroups);
 
-                  // Set selected players based on groups
-                  const playerIds = allGroups.flatMap(g => g.players.map(p => p.id));
-                  setSelectedPlayerIds(playerIds);
-                }
+                // Set selected players based on groups
+                const playerIds = allGroups.flatMap(g => g.players.map(p => p.id));
+                setSelectedPlayerIds(playerIds);
+                
                 setCurrentView('newGame');
               }}
             />
@@ -653,10 +654,9 @@ function App() {
           )
         }
 
-        {
-          currentView === 'newGame' && canAccessView('newGame') && (
+        {currentView === 'newGame' && canAccessView('newGame') && (
             <div style={{ display: 'grid', gap: 'var(--spacing-lg)' }}>
-              {role === 'admin' && (
+              {(role === 'admin' || role === 'game_manager') && (
                 <div className="card">
                   <h3 style={{ marginBottom: 'var(--spacing-md)' }}>{t('game.date')}</h3>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)' }}>
@@ -716,7 +716,7 @@ function App() {
                     {t('game.selectPastDate')}
                   </p>
 
-                  {(role === 'admin' || (role === 'game_manager' && selectedDate === new Date().toISOString().split('T')[0])) && (
+                    {(role === 'admin' || role === 'game_manager') && (
                     <div style={{ marginTop: 'var(--spacing-md)', display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
                       <input
                         type="checkbox"
@@ -857,6 +857,7 @@ function App() {
                     onResultsSubmit={handleResultsSubmit}
                     onGroupSubmit={handleGroupResultSubmit}
                     currentUserId={userPlayer?.id}
+                    date={selectedDate}
                   />
                 </>
               )}

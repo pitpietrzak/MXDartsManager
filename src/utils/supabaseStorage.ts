@@ -778,6 +778,90 @@ export async function getDailyGames(date?: string): Promise<DailyGame[]> {
 }
 
 /**
+ * Get all incomplete games across all dates
+ */
+export async function getPendingGames(): Promise<DailyGame[]> {
+    // First, get all players for lookup
+    const { data: allPlayers, error: playersError } = await supabase
+        .from('players')
+        .select('id, name, emoji');
+
+    if (playersError) {
+        console.error('Error loading players:', playersError);
+        return [];
+    }
+
+    const playerMap = new Map(allPlayers.map(p => [p.id, { name: p.name, emoji: p.emoji }]));
+
+    const { data: games, error: gamesError } = await supabase
+        .from('games')
+        .select(`
+      *,
+      game_groups (
+        id,
+        group_index,
+        game_results (
+          player_id,
+          wins,
+          losses,
+          position
+        )
+      )
+    `)
+        .eq('completed', false)
+        .order('date', { ascending: true }) // Oldest first for pending games
+        .order('created_at', { ascending: true });
+
+    if (gamesError) {
+        console.error('Error loading pending games:', gamesError);
+        return [];
+    }
+
+    if (!games || games.length === 0) {
+        return [];
+    }
+
+    // Transform database structure to app structure
+    const dbGames = games as unknown as DbGame[];
+
+    return dbGames.map(game => {
+        const groups: Group[] = game.game_groups
+            .sort((a, b) => a.group_index - b.group_index)
+            .map((group) => {
+                // Get unique player IDs from results
+                const playerIds = group.game_results.map((r) => r.player_id);
+                const players = playerIds.map((id: string) => {
+                    const playerData = playerMap.get(id);
+                    return {
+                        id,
+                        name: playerData?.name || 'Unknown Player',
+                        emoji: playerData?.emoji,
+                        createdAt: ''
+                    };
+                });
+
+                return {
+                    id: group.id,
+                    players,
+                    results: group.game_results.map((result) => ({
+                        playerId: result.player_id,
+                        wins: result.wins,
+                        losses: result.losses,
+                        position: result.position
+                    }))
+                };
+            });
+
+        return {
+            id: game.id,
+            date: game.date,
+            groups,
+            completed: game.completed
+        };
+    });
+}
+
+/**
  * Get absences for a specific player in a given month range
  */
 export async function getPlayerAbsences(playerId: string, start: string, end: string): Promise<string[]> {

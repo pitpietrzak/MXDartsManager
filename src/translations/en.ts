@@ -93,6 +93,7 @@ export const en: Translations = {
     'game.todaysGames': "Today's Games",
     'game.noGamesScheduled': 'No games scheduled for today',
     'game.scheduled': 'scheduled',
+    'game.pendingGames': 'Pending Games',
     'game.yourGroup': '⭐ Your Group',
     'game.you': '(You)',
     'game.itsYou': "It's You",

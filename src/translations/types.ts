@@ -87,6 +87,7 @@ export type TranslationKey =
     | 'game.todaysGames'
     | 'game.noGamesScheduled'
     | 'game.scheduled'
+    | 'game.pendingGames'
     | 'game.yourGroup'
     | 'game.you'
     | 'game.group'

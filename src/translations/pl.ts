@@ -93,6 +93,7 @@ export const pl: Translations = {
     'game.todaysGames': 'Dzisiejsze Gry',
     'game.noGamesScheduled': 'Brak zaplanowanych gier na dzisiaj',
     'game.scheduled': 'zaplanowane',
+    'game.pendingGames': 'Oczekujące Gry',
     'game.yourGroup': '⭐ Twoja Grupa',
     'game.you': '(Ty)',
     'game.itsYou': 'To Ty',
