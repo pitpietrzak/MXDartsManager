@@ -152,6 +152,7 @@ export const pl: Translations = {
     'common.deleteHint': 'Usuń grę',
     'game.results': 'Wyniki',
     'game.confirmGroup': 'Zatwierdź Wyniki',
+    'game.resultsConfirmed': 'Wyniki grupy zostały zatwierdzone',
     'common.game': 'Gra',
     'common.games': 'Gry',
     'manual.playersNotPresent': 'graczy jest w grupach, ale nie są zaznaczeni jako obecni',

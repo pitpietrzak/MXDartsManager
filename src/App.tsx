@@ -18,6 +18,7 @@ import { PlayerClaimDialog } from './components/PlayerClaimDialog';
 import { MyProfile } from './components/MyProfile';
 import { useAuth } from './contexts/AuthContext';
 import { useLanguage } from './contexts/LanguageContext';
+import { useToast } from './contexts/ToastContext';
 import {
   loadPlayers,
   addPlayer as dbAddPlayer,
@@ -42,6 +43,7 @@ type View = 'dashboard' | 'players' | 'newGame' | 'leaderboard' | 'history' | 'm
 function App() {
   const { user, role, loading: authLoading } = useAuth();
   const { t, language } = useLanguage();
+  const { showToast } = useToast();
   const [isPasswordReset, setIsPasswordReset] = useState(false);
   const [players, setPlayers] = useState<Player[]>([]);
   const [games, setGames] = useState<DailyGame[]>([]);
@@ -391,17 +393,13 @@ function App() {
   const handleGroupResultSubmit = async (groupId: string, results: GameResult[]) => {
     const success = await saveGroupResults(groupId, results);
     if (success) {
+      showToast(t('game.resultsConfirmed'), 'success');
       await reloadData();
 
-      // Update drawnGroups with the new results to reflect saved state immediately
-      setDrawnGroups(prev => prev.map(g => {
-        if (g.id === groupId) {
-          return { ...g, results };
-        }
-        return g;
-      }));
+      // Remove the confirmed group from drawnGroups so it disappears from the view
+      setDrawnGroups(prev => prev.filter(g => g.id !== groupId));
     } else {
-      alert('Failed to save group results');
+      showToast('Failed to save group results', 'error');
     }
   };
 
@@ -470,8 +468,8 @@ function App() {
   };
 
   return (
-    <div style={{ 
-      height: '100vh', 
+    <div style={{
+      height: '100vh',
       background: isPublicView ? '#ffffff' : 'var(--color-bg-primary)',
       overflow: isPublicView ? 'hidden' : 'auto'
     }}>
@@ -531,8 +529,8 @@ function App() {
       )}
 
       {/* Main Content */}
-      <div className={isPublicView ? "" : "container"} style={{ 
-        paddingBottom: isPublicView ? 0 : 'var(--spacing-2xl)', 
+      <div className={isPublicView ? "" : "container"} style={{
+        paddingBottom: isPublicView ? 0 : 'var(--spacing-2xl)',
         paddingTop: isPublicView ? 'var(--spacing-md)' : 0,
         width: isPublicView ? '100%' : 'auto',
         maxWidth: isPublicView ? '100%' : '1200px',
@@ -602,7 +600,7 @@ function App() {
                 // Set selected players based on groups
                 const playerIds = allGroups.flatMap(g => g.players.map(p => p.id));
                 setSelectedPlayerIds(playerIds);
-                
+
                 setCurrentView('newGame');
               }}
             />
@@ -655,214 +653,214 @@ function App() {
         }
 
         {currentView === 'newGame' && canAccessView('newGame') && (
-            <div style={{ display: 'grid', gap: 'var(--spacing-lg)' }}>
-              {(role === 'admin' || role === 'game_manager') && (
-                <div className="card">
-                  <h3 style={{ marginBottom: 'var(--spacing-md)' }}>{t('game.date')}</h3>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)' }}>
-                    <input
-                      type="date"
-                      value={selectedDate}
-                      onChange={(e) => {
-                        const newDate = e.target.value;
-                        if (!isWeekend(newDate)) {
-                          setSelectedDate(newDate);
+          <div style={{ display: 'grid', gap: 'var(--spacing-lg)' }}>
+            {(role === 'admin' || role === 'game_manager') && (
+              <div className="card">
+                <h3 style={{ marginBottom: 'var(--spacing-md)' }}>{t('game.date')}</h3>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)' }}>
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => {
+                      const newDate = e.target.value;
+                      if (!isWeekend(newDate)) {
+                        setSelectedDate(newDate);
 
-                          // Reset state when date changes
-                          if (newDate === new Date().toISOString().split('T')[0]) {
-                            // If switching back to today, reload today's games
-                            if (todaysGames.length > 0) {
-                              const allGroups = todaysGames.flatMap(g => g.groups);
-                              setDrawnGroups(allGroups);
-                              const playerIds = allGroups.flatMap(g => g.players.map(p => p.id));
-                              setSelectedPlayerIds(playerIds);
-                            }
-                          } else {
-                            // If switching to a past date, clear current groups to allow new entry
-                            setDrawnGroups([]);
-                            setSelectedPlayerIds([]);
-                            // We could also check for incomplete games on this past date here,
-                            // but for now, we assume the user wants to enter new data.
+                        // Reset state when date changes
+                        if (newDate === new Date().toISOString().split('T')[0]) {
+                          // If switching back to today, reload today's games
+                          if (todaysGames.length > 0) {
+                            const allGroups = todaysGames.flatMap(g => g.groups);
+                            setDrawnGroups(allGroups);
+                            const playerIds = allGroups.flatMap(g => g.players.map(p => p.id));
+                            setSelectedPlayerIds(playerIds);
                           }
                         } else {
-                          alert('Cannot select weekend dates. Games are only allowed on weekdays.');
-                        }
-                      }}
-                      max={new Date().toISOString().split('T')[0]}
-                      style={{
-                        padding: 'var(--spacing-sm) var(--spacing-md)',
-                        borderRadius: 'var(--radius-md)',
-                        border: '1px solid var(--color-border)',
-                        background: 'var(--color-bg-secondary)',
-                        color: 'var(--color-text-primary)',
-                        fontSize: '1rem',
-                        flex: 1
-                      }}
-                    />
-                    {selectedDate !== new Date().toISOString().split('T')[0] && (
-                      <div style={{
-                        padding: 'var(--spacing-xs) var(--spacing-sm)',
-                        background: 'var(--color-accent-primary)',
-                        color: 'white',
-                        borderRadius: 'var(--radius-md)',
-                        fontSize: '0.875rem',
-                        fontWeight: 600
-                      }}>
-                        Historical Game
-                      </div>
-                    )}
-                  </div>
-                  <p className="text-muted" style={{ fontSize: '0.875rem', marginTop: 'var(--spacing-sm)' }}>
-                    {t('game.selectPastDate')}
-                  </p>
-
-                    {(role === 'admin' || role === 'game_manager') && (
-                    <div style={{ marginTop: 'var(--spacing-md)', display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
-                      <input
-                        type="checkbox"
-                        id="manualEntry"
-                        checked={manualEntry}
-                        onChange={(e) => setManualEntry(e.target.checked)}
-                        style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                      />
-                      <label htmlFor="manualEntry" style={{ cursor: 'pointer', fontSize: '0.9rem' }}>
-                        {t('game.manualEntry')}
-                      </label>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {isWeekend(selectedDate) && (
-                <div className="card" style={{
-                  background: 'var(--color-accent-danger)',
-                  color: 'white',
-                  border: 'none'
-                }}>
-                  <h3 style={{ marginBottom: 'var(--spacing-sm)', color: 'white' }}>{t('game.weekendWarning')}</h3>
-                  <p style={{ margin: 0 }}>
-                    Games cannot be created on weekends (Saturday & Sunday). Please select a weekday.
-                  </p>
-                </div>
-              )}
-
-              {!isWeekend(selectedDate) && (
-                <>
-                  <AttendanceSelector
-                    players={players}
-                    selectedPlayerIds={selectedPlayerIds}
-                    onSelectionChange={setSelectedPlayerIds}
-                    playersWhoPlayedToday={getPlayersWhoPlayedToday()}
-                    activePlayerIds={activePlayerIds}
-                    selectedDate={selectedDate}
-                  />
-
-                  {selectedPlayerIds.length >= 2 && !manualEntry && drawnGroups.length === 0 && (
-                    <GroupDrawer
-                      presentPlayers={presentPlayers}
-                      groups={drawnGroups}
-                      onGroupsGenerated={handleGroupsGenerated}
-                      currentUserId={userPlayer?.id}
-                      previousGamedayGames={previousGamedayGames}
-                      stats={stats}
-                    />
-                  )}
-                </>
-              )}
-
-
-              {manualEntry && selectedPlayerIds.length >= 2 && !isWeekend(selectedDate) && !isEditingGroups && drawnGroups.length === 0 && (
-                <ManualGroupCreator
-                  presentPlayers={presentPlayers}
-                  onGroupsCreated={handleGroupsGenerated}
-                />
-              )}
-
-              {isEditingGroups && (
-                <div className="card fade-in">
-                  <div className="flex items-center justify-between mb-md">
-                    <h3 style={{ margin: 0 }}>{t('manual.title')}</h3>
-                    <div className="flex gap-sm">
-                      <button
-                        onClick={async () => {
-                          if (window.confirm(t('history.deleteConfirmation') || 'Are you sure you want to delete all scheduled games for today?')) {
-                            const success = await updateDailyGroups(selectedDate, currentMonth, []);
-                            if (success) {
-                              await reloadData();
-                              setIsEditingGroups(false);
-                              setTodaysGames([]);
-                              setDrawnGroups([]);
-                            } else {
-                              alert('Failed to delete games');
-                            }
-                          }
-                        }}
-                        className="btn"
-                        style={{
-                          background: 'var(--color-accent-danger)',
-                          color: 'white',
-                          border: 'none'
-                        }}
-                      >
-                        {t('common.delete')}
-                      </button>
-                      <button
-                        onClick={() => setIsEditingGroups(false)}
-                        className="btn btn-secondary"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                  <ManualGroupCreator
-                    presentPlayers={presentPlayers}
-                    initialGroups={drawnGroups}
-                    onGroupsCreated={async (newGroups) => {
-                      const success = await updateDailyGroups(selectedDate, currentMonth, newGroups);
-                      if (success) {
-                        await reloadData();
-                        setIsEditingGroups(false);
-
-                        // Refresh local state
-                        const freshGames = await getDailyGames(selectedDate);
-                        if (freshGames.length > 0) {
-                          if (selectedDate === new Date().toISOString().split('T')[0]) {
-                            setTodaysGames(freshGames);
-                          }
-                          setDrawnGroups(freshGames.flatMap(g => g.groups));
+                          // If switching to a past date, clear current groups to allow new entry
+                          setDrawnGroups([]);
+                          setSelectedPlayerIds([]);
+                          // We could also check for incomplete games on this past date here,
+                          // but for now, we assume the user wants to enter new data.
                         }
                       } else {
-                        alert('Failed to update groups');
+                        alert('Cannot select weekend dates. Games are only allowed on weekdays.');
                       }
                     }}
+                    max={new Date().toISOString().split('T')[0]}
+                    style={{
+                      padding: 'var(--spacing-sm) var(--spacing-md)',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px solid var(--color-border)',
+                      background: 'var(--color-bg-secondary)',
+                      color: 'var(--color-text-primary)',
+                      fontSize: '1rem',
+                      flex: 1
+                    }}
                   />
-                </div>
-              )}
-
-              {drawnGroups.length > 0 && !isEditingGroups && (
-                <>
-                  {(role === 'admin' || role === 'game_manager') && (
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 'var(--spacing-md)' }}>
-                      <button
-                        onClick={() => setIsEditingGroups(true)}
-                        className="btn btn-secondary"
-                        style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-xs)' }}
-                      >
-                        {t('manual.editGroups') || 'Edit Groups'}
-                      </button>
+                  {selectedDate !== new Date().toISOString().split('T')[0] && (
+                    <div style={{
+                      padding: 'var(--spacing-xs) var(--spacing-sm)',
+                      background: 'var(--color-accent-primary)',
+                      color: 'white',
+                      borderRadius: 'var(--radius-md)',
+                      fontSize: '0.875rem',
+                      fontWeight: 600
+                    }}>
+                      Historical Game
                     </div>
                   )}
-                  <ResultsEntry
+                </div>
+                <p className="text-muted" style={{ fontSize: '0.875rem', marginTop: 'var(--spacing-sm)' }}>
+                  {t('game.selectPastDate')}
+                </p>
+
+                {(role === 'admin' || role === 'game_manager') && (
+                  <div style={{ marginTop: 'var(--spacing-md)', display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
+                    <input
+                      type="checkbox"
+                      id="manualEntry"
+                      checked={manualEntry}
+                      onChange={(e) => setManualEntry(e.target.checked)}
+                      style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                    />
+                    <label htmlFor="manualEntry" style={{ cursor: 'pointer', fontSize: '0.9rem' }}>
+                      {t('game.manualEntry')}
+                    </label>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {isWeekend(selectedDate) && (
+              <div className="card" style={{
+                background: 'var(--color-accent-danger)',
+                color: 'white',
+                border: 'none'
+              }}>
+                <h3 style={{ marginBottom: 'var(--spacing-sm)', color: 'white' }}>{t('game.weekendWarning')}</h3>
+                <p style={{ margin: 0 }}>
+                  Games cannot be created on weekends (Saturday & Sunday). Please select a weekday.
+                </p>
+              </div>
+            )}
+
+            {!isWeekend(selectedDate) && (
+              <>
+                <AttendanceSelector
+                  players={players}
+                  selectedPlayerIds={selectedPlayerIds}
+                  onSelectionChange={setSelectedPlayerIds}
+                  playersWhoPlayedToday={getPlayersWhoPlayedToday()}
+                  activePlayerIds={activePlayerIds}
+                  selectedDate={selectedDate}
+                />
+
+                {selectedPlayerIds.length >= 2 && !manualEntry && drawnGroups.length === 0 && (
+                  <GroupDrawer
+                    presentPlayers={presentPlayers}
                     groups={drawnGroups}
-                    onResultsSubmit={handleResultsSubmit}
-                    onGroupSubmit={handleGroupResultSubmit}
+                    onGroupsGenerated={handleGroupsGenerated}
                     currentUserId={userPlayer?.id}
-                    date={selectedDate}
+                    previousGamedayGames={previousGamedayGames}
+                    stats={stats}
                   />
-                </>
-              )}
-            </div>
-          )
+                )}
+              </>
+            )}
+
+
+            {manualEntry && selectedPlayerIds.length >= 2 && !isWeekend(selectedDate) && !isEditingGroups && drawnGroups.length === 0 && (
+              <ManualGroupCreator
+                presentPlayers={presentPlayers}
+                onGroupsCreated={handleGroupsGenerated}
+              />
+            )}
+
+            {isEditingGroups && (
+              <div className="card fade-in">
+                <div className="flex items-center justify-between mb-md">
+                  <h3 style={{ margin: 0 }}>{t('manual.title')}</h3>
+                  <div className="flex gap-sm">
+                    <button
+                      onClick={async () => {
+                        if (window.confirm(t('history.deleteConfirmation') || 'Are you sure you want to delete all scheduled games for today?')) {
+                          const success = await updateDailyGroups(selectedDate, currentMonth, []);
+                          if (success) {
+                            await reloadData();
+                            setIsEditingGroups(false);
+                            setTodaysGames([]);
+                            setDrawnGroups([]);
+                          } else {
+                            alert('Failed to delete games');
+                          }
+                        }
+                      }}
+                      className="btn"
+                      style={{
+                        background: 'var(--color-accent-danger)',
+                        color: 'white',
+                        border: 'none'
+                      }}
+                    >
+                      {t('common.delete')}
+                    </button>
+                    <button
+                      onClick={() => setIsEditingGroups(false)}
+                      className="btn btn-secondary"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+                <ManualGroupCreator
+                  presentPlayers={presentPlayers}
+                  initialGroups={drawnGroups}
+                  onGroupsCreated={async (newGroups) => {
+                    const success = await updateDailyGroups(selectedDate, currentMonth, newGroups);
+                    if (success) {
+                      await reloadData();
+                      setIsEditingGroups(false);
+
+                      // Refresh local state
+                      const freshGames = await getDailyGames(selectedDate);
+                      if (freshGames.length > 0) {
+                        if (selectedDate === new Date().toISOString().split('T')[0]) {
+                          setTodaysGames(freshGames);
+                        }
+                        setDrawnGroups(freshGames.flatMap(g => g.groups));
+                      }
+                    } else {
+                      alert('Failed to update groups');
+                    }
+                  }}
+                />
+              </div>
+            )}
+
+            {drawnGroups.length > 0 && !isEditingGroups && (
+              <>
+                {(role === 'admin' || role === 'game_manager') && (
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 'var(--spacing-md)' }}>
+                    <button
+                      onClick={() => setIsEditingGroups(true)}
+                      className="btn btn-secondary"
+                      style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-xs)' }}
+                    >
+                      {t('manual.editGroups') || 'Edit Groups'}
+                    </button>
+                  </div>
+                )}
+                <ResultsEntry
+                  groups={drawnGroups}
+                  onResultsSubmit={handleResultsSubmit}
+                  onGroupSubmit={handleGroupResultSubmit}
+                  currentUserId={userPlayer?.id}
+                  date={selectedDate}
+                />
+              </>
+            )}
+          </div>
+        )
         }
 
         {

@@ -152,6 +152,7 @@ export const en: Translations = {
     'common.deleteHint': 'Delete game',
     'game.results': 'Results',
     'game.confirmGroup': 'Confirm Results',
+    'game.resultsConfirmed': 'Group results confirmed',
     'common.game': 'Game',
     'common.games': 'Games',
     'manual.playersNotPresent': 'player(s) are in groups but not marked as present',

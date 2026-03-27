@@ -144,6 +144,7 @@ export type TranslationKey =
     | 'common.deleteHint'
     | 'game.results'
     | 'game.confirmGroup'
+    | 'game.resultsConfirmed'
     | 'common.game'
     | 'common.games'
     | 'manual.playersNotPresent'
