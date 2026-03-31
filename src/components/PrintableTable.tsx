@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
-import { Player } from '../types/types';
+import React, { useState, useMemo, useEffect, Fragment } from 'react';
+import { Player, DailyGame, Group, GameResult } from '../types/types';
 import { useLanguage } from '../contexts/LanguageContext';
+import { loadMonthGames } from '../utils/supabaseStorage';
 
 interface PrintableTableProps {
     players: Player[];
@@ -11,6 +12,51 @@ export const PrintableTable: React.FC<PrintableTableProps> = ({ players, availab
     const { t, language } = useLanguage();
     const [selectedMonth, setSelectedMonth] = useState(availableMonths[0] || new Date().toISOString().slice(0, 7));
     const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
+    const [games, setGames] = useState<DailyGame[]>([]);
+
+    useEffect(() => {
+        let isMounted = true;
+        loadMonthGames(selectedMonth, false)
+            .then(loadedGames => {
+                if (isMounted) {
+                    setGames(loadedGames);
+                }
+            })
+            .catch(err => {
+                console.error('Error loading games for printable table:', err);
+            });
+        return () => { isMounted = false; };
+    }, [selectedMonth]);
+
+    const getResult = (date: Date, playerId: string) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const formattedDate = `${year}-${month}-${day}`;
+        
+        const matchingGames = games.filter((g: DailyGame) => g.date === formattedDate);
+        if (matchingGames.length === 0) return null;
+
+        let wins = 0;
+        let losses = 0;
+        let found = false;
+        let isCompleted = false;
+
+        matchingGames.forEach(game => {
+            if (game.completed) isCompleted = true;
+            game.groups.forEach((group: Group) => {
+                const result = group.results?.find((r: GameResult) => r.playerId === playerId);
+                if (result) {
+                    wins += result.wins;
+                    losses += result.losses;
+                    found = true;
+                }
+            });
+        });
+
+        // Only return numbers if the game is completed, otherwise return null for placeholders
+        return (found && isCompleted) ? { wins, losses } : null;
+    };
 
     const selectedPlayers = useMemo(() => {
         return players.filter(p => selectedPlayerIds.includes(p.id)).sort((a, b) => a.name.localeCompare(b.name));
@@ -67,8 +113,8 @@ export const PrintableTable: React.FC<PrintableTableProps> = ({ players, availab
     }, [selectedPlayers.length, monthDays.length]);
 
     const handleTogglePlayer = (id: string) => {
-        setSelectedPlayerIds(prev =>
-            prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]
+        setSelectedPlayerIds((prev: string[]) =>
+            prev.includes(id) ? prev.filter((p: string) => p !== id) : [...prev, id]
         );
     };
 
@@ -112,7 +158,7 @@ export const PrintableTable: React.FC<PrintableTableProps> = ({ players, availab
                             background: 'var(--color-bg-secondary)',
                             borderRadius: 'var(--radius-md)'
                         }}>
-                            {players.sort((a, b) => a.name.localeCompare(b.name)).map(player => (
+                            {players.sort((a, b) => a.name.localeCompare(b.name)).map((player: Player) => (
                                 <label
                                     key={player.id}
                                     style={{
@@ -317,7 +363,7 @@ export const PrintableTable: React.FC<PrintableTableProps> = ({ players, availab
                             </tr>
                         </thead>
                         <tbody>
-                            {monthDays.map((date, index) => (
+                            {monthDays.map((date: Date, index: number) => (
                                 <tr key={date.toISOString()}>
                                     <td className="index-col">{index + 1}</td>
                                     <td className="date-col">
@@ -327,12 +373,15 @@ export const PrintableTable: React.FC<PrintableTableProps> = ({ players, availab
                                             year: 'numeric'
                                         })}
                                     </td>
-                                    {selectedPlayers.map(player => (
-                                        <React.Fragment key={player.id}>
-                                            <td className="wl-cell"></td>
-                                            <td className="wl-cell"></td>
-                                        </React.Fragment>
-                                    ))}
+                                    {selectedPlayers.map((player: Player) => {
+                                        const result = getResult(date, player.id);
+                                        return (
+                                            <Fragment key={player.id}>
+                                                <td className="wl-cell">{result !== null ? result.wins : ''}</td>
+                                                <td className="wl-cell">{result !== null ? result.losses : ''}</td>
+                                            </Fragment>
+                                        );
+                                    })}
                                 </tr>
                             ))}
                         </tbody>

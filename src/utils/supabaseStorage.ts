@@ -210,7 +210,7 @@ export async function getUserGameHistory(playerId: string, month: string): Promi
 /**
  * Load games for a specific month
  */
-export async function loadMonthGames(month: string): Promise<DailyGame[]> {
+export async function loadMonthGames(month: string, onlyCompleted: boolean = true): Promise<DailyGame[]> {
     // First, get all players for lookup
     const { data: allPlayers, error: playersError } = await supabase
         .from('players')
@@ -223,7 +223,7 @@ export async function loadMonthGames(month: string): Promise<DailyGame[]> {
 
     const playerMap = new Map(allPlayers.map((p) => [p.id, { name: p.name, emoji: p.emoji }]));
 
-    const { data: games, error: gamesError } = await supabase
+    const query = supabase
         .from('games')
         .select(`
       *,
@@ -238,8 +238,13 @@ export async function loadMonthGames(month: string): Promise<DailyGame[]> {
         )
       )
     `)
-        .eq('month', month)
-        .eq('completed', true)
+        .eq('month', month);
+
+    if (onlyCompleted) {
+        query.eq('completed', true);
+    }
+
+    const { data: games, error: gamesError } = await query
         .order('date', { ascending: false })
         .order('created_at', { ascending: true });
 
