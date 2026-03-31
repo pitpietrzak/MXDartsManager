@@ -72,11 +72,12 @@ function App() {
   const [historyLoading, setHistoryLoading] = useState(false);
 
   // Generate list of months from February 2026 to the current month
-  const availableMonths = useMemo(() => {
+    const availableMonths = useMemo(() => {
     const months: string[] = [];
     const now = new Date();
     const earliest = new Date(2026, 1, 1); // February 2026
-    const cursor = new Date(now.getFullYear(), now.getMonth(), 1);
+    // Start from next month to allow printing/viewing future months
+    const cursor = new Date(now.getFullYear(), now.getMonth() + 1, 1);
     while (cursor >= earliest) {
       const year = cursor.getFullYear();
       const month = String(cursor.getMonth() + 1).padStart(2, '0');
