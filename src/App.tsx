@@ -898,7 +898,7 @@ function App() {
           )
         }
 
-        {currentView === 'myProfile' && userPlayer && (
+        {currentView === 'myProfile' && user && (
           <MyProfile
             player={userPlayer}
             stats={userStats}

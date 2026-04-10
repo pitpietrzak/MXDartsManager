@@ -43,7 +43,7 @@ export function UserMenu({ userPlayer, onNavigateToProfile }: UserMenuProps) {
                 <span style={{ fontSize: '1.25rem' }}>{badge.emoji}</span>
                 <div>
                     <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '2px' }}>
-                        {t('common.hello')}, {user.email?.split('@')[0] || 'User'}!
+                        {t('common.hello')}, {user.user_metadata?.display_name || userPlayer?.name || user.email?.split('@')[0] || 'User'}!
                     </div>
                     <div style={{ fontSize: '0.75rem', color: badge.color }}>
                         {badge.label}
@@ -51,7 +51,7 @@ export function UserMenu({ userPlayer, onNavigateToProfile }: UserMenuProps) {
                 </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xs)' }}>
-                {userPlayer && onNavigateToProfile && (
+                {onNavigateToProfile && (
                     <button
                         onClick={onNavigateToProfile}
                         className="btn btn-secondary btn-sm"

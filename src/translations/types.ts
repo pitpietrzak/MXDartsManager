@@ -180,7 +180,10 @@ export type TranslationKey =
     | 'print.generate'
     | 'print.print'
     | 'print.date'
-    | 'common.lastMonth';
+    | 'common.lastMonth'
+    | 'profile.accountSettings'
+    | 'profile.displayName'
+    | 'profile.displayNameDesc';
 
 export interface Translations {
     [key: string]: string;

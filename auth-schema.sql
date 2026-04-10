@@ -8,7 +8,7 @@ CREATE TABLE user_roles (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
   email text,
-  role text NOT NULL CHECK (role IN ('admin', 'game_manager', 'user')),
+  role text NOT NULL CHECK (role IN ('admin', 'game_manager', 'chef', 'user')),
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now(),
   UNIQUE(user_id)
@@ -107,7 +107,7 @@ CREATE POLICY "Game managers can create games"
   ON games FOR INSERT
   WITH CHECK (
     is_admin(auth.uid()) OR 
-    get_user_role(auth.uid()) = 'game_manager'
+    get_user_role(auth.uid()) IN ('game_manager', 'chef')
   );
 
 CREATE POLICY "Admins can delete games"
@@ -123,7 +123,7 @@ CREATE POLICY "Game managers can create game_groups"
   ON game_groups FOR INSERT
   WITH CHECK (
     is_admin(auth.uid()) OR 
-    get_user_role(auth.uid()) = 'game_manager'
+    get_user_role(auth.uid()) IN ('game_manager', 'chef')
   );
 
 -- Game results: game_managers and admins can create, everyone authenticated can read
@@ -135,7 +135,7 @@ CREATE POLICY "Game managers can create game_results"
   ON game_results FOR INSERT
   WITH CHECK (
     is_admin(auth.uid()) OR 
-    get_user_role(auth.uid()) = 'game_manager'
+    get_user_role(auth.uid()) IN ('game_manager', 'chef')
   );
 
 -- ============================================
