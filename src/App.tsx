@@ -458,7 +458,7 @@ function App() {
       case 'players':
         return role === 'admin';
       case 'newGame':
-        return role === 'admin' || role === 'game_manager';
+        return role === 'admin' || role === 'game_manager' || role === 'chef';
       case 'dashboard':
       case 'leaderboard':
       case 'history':
@@ -634,7 +634,7 @@ function App() {
                 players={players}
                 darterOfLastMonthId={darterOfLastMonth?.playerId}
                 darterOfLastMonthString={lastMonth}
-                onPrintClick={(role === 'admin' || role === 'game_manager') ? () => setCurrentView('printTable') : undefined}
+                onPrintClick={(role === 'admin' || role === 'game_manager' || role === 'chef') ? () => setCurrentView('printTable') : undefined}
               />
             )}
           </div>
@@ -655,7 +655,7 @@ function App() {
 
         {currentView === 'newGame' && canAccessView('newGame') && (
           <div style={{ display: 'grid', gap: 'var(--spacing-lg)' }}>
-            {(role === 'admin' || role === 'game_manager') && (
+            {(role === 'admin' || role === 'game_manager' || role === 'chef') && (
               <div className="card">
                 <h3 style={{ marginBottom: 'var(--spacing-md)' }}>{t('game.date')}</h3>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-md)' }}>
@@ -715,7 +715,7 @@ function App() {
                   {t('game.selectPastDate')}
                 </p>
 
-                {(role === 'admin' || role === 'game_manager') && (
+                {(role === 'admin' || role === 'game_manager' || role === 'chef') && (
                   <div style={{ marginTop: 'var(--spacing-md)', display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
                     <input
                       type="checkbox"

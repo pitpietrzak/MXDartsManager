@@ -20,6 +20,8 @@ export function UserMenu({ userPlayer, onNavigateToProfile }: UserMenuProps) {
                 return { emoji: '🛠️', label: t('role.admin'), color: 'var(--color-accent-primary)' };
             case 'game_manager':
                 return { emoji: '🎯', label: t('role.gameManager'), color: 'var(--color-accent-secondary)' };
+            case 'chef':
+                return { emoji: '👨‍🍳', label: t('role.chef'), color: 'var(--color-accent-secondary)' };
             default:
                 return { emoji: '👤', label: t('role.user'), color: 'var(--color-text-muted)' };
         }

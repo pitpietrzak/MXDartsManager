@@ -6,7 +6,7 @@ import { useUserPreferences } from '../contexts/UserPreferencesContext';
 interface TodaysGamesProps {
     games: DailyGame[];
     currentUserId: string | null;
-    role: 'admin' | 'game_manager' | 'user' | null;
+    role: 'admin' | 'game_manager' | 'chef' | 'user' | null;
     onNavigateToResults?: (date?: string) => void;
     onCancelGame?: (gameId: string) => void;
 }
@@ -73,7 +73,7 @@ export const TodaysGames: React.FC<TodaysGamesProps> = ({
                             {games.length} {games.length === 1 ? t('common.game') : t('common.games')} {t('game.scheduled')} · {t('game.orderedByLastGames')}
                         </p>
                     </div>
-                    {(role === 'admin' || role === 'game_manager') && onNavigateToResults && hasOnlyToday && (
+                    {(role === 'admin' || role === 'game_manager' || role === 'chef') && onNavigateToResults && hasOnlyToday && (
                         <button
                             onClick={() => onNavigateToResults()}
                             className="btn btn-primary"
@@ -105,7 +105,7 @@ export const TodaysGames: React.FC<TodaysGamesProps> = ({
                                     📅 {formatDate(date)}
                                 </h4>
                             )}
-                            {!hasOnlyToday && (role === 'admin' || role === 'game_manager') && onNavigateToResults && (
+                            {!hasOnlyToday && (role === 'admin' || role === 'game_manager' || role === 'chef') && onNavigateToResults && (
                                 <div style={{ display: 'flex', gap: 'var(--spacing-xs)' }}>
                                     {role === 'admin' && onCancelGame && (
                                         <button

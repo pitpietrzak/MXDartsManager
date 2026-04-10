@@ -6,7 +6,7 @@ import { useUserPreferences } from '../contexts/UserPreferencesContext';
 interface GameHistoryProps {
     games: DailyGame[];
     currentPlayerId?: string;
-    role: 'admin' | 'game_manager' | 'user' | null;
+    role: 'admin' | 'game_manager' | 'chef' | 'user' | null;
     onDelete?: (gameId: string) => Promise<void>;
     selectedMonth: string;
     availableMonths: string[];

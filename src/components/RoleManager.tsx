@@ -6,7 +6,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 interface UserWithRole {
     id: string;
     email: string;
-    role: 'admin' | 'game_manager' | 'user';
+    role: 'admin' | 'game_manager' | 'chef' | 'user';
 }
 
 export function RoleManager() {
@@ -34,7 +34,7 @@ export function RoleManager() {
             const usersWithRoles: UserWithRole[] = (rolesData || []).map(roleData => ({
                 id: roleData.user_id,
                 email: roleData.email || 'Unknown',
-                role: roleData.role as 'admin' | 'game_manager' | 'user'
+                role: roleData.role as 'admin' | 'game_manager' | 'chef' | 'user'
             }));
 
             setUsers(usersWithRoles);
@@ -52,7 +52,7 @@ export function RoleManager() {
         }
     }, [currentUserRole, loadUsers]);
 
-    const updateRole = async (userId: string, newRole: 'admin' | 'game_manager' | 'user') => {
+    const updateRole = async (userId: string, newRole: 'admin' | 'game_manager' | 'chef' | 'user') => {
         try {
             const { error } = await supabase
                 .from('user_roles')
@@ -149,6 +149,7 @@ export function RoleManager() {
                             >
                                 <option value="user">👤 {t('role.user')}</option>
                                 <option value="game_manager">🎯 {t('role.gameManager')}</option>
+                                <option value="chef">👨‍🍳 {t('role.chef')}</option>
                                 <option value="admin">🛠️ {t('role.admin')}</option>
                             </select>
                         </div>
@@ -167,6 +168,7 @@ export function RoleManager() {
                 <ul style={{ marginTop: 'var(--spacing-sm)', paddingLeft: 'var(--spacing-lg)' }}>
                     <li><strong>{t('roles.adminDesc')}</strong></li>
                     <li><strong>{t('roles.managerDesc')}</strong></li>
+                    <li><strong>{t('roles.chefDesc')}</strong></li>
                     <li><strong>{t('roles.userDesc')}</strong></li>
                 </ul>
             </div>
