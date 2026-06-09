@@ -878,7 +878,7 @@ function App() {
               darterOfLastMonthId={darterOfLastMonth?.playerId}
               darterOfLastMonthString={lastMonth}
               isPublicView={isPublicView}
-              onPrintClick={(role === 'admin' || role === 'game_manager') ? () => setCurrentView('printTable') : undefined}
+              onPrintClick={(role === 'admin' || role === 'game_manager' || role === 'chef') ? () => setCurrentView('printTable') : undefined}
             />
           )
         }
@@ -908,7 +908,7 @@ function App() {
           />
         )}
 
-        {currentView === 'printTable' && (role === 'admin' || role === 'game_manager') && (
+        {currentView === 'printTable' && (role === 'admin' || role === 'game_manager' || role === 'chef') && (
           <PrintableTable
             players={players}
             availableMonths={availableMonths}
