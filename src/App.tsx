@@ -840,7 +840,7 @@ function App() {
 
             {drawnGroups.length > 0 && !isEditingGroups && (
               <>
-                {(role === 'admin' || role === 'game_manager') && (
+                {(role === 'admin' || role === 'game_manager' || role === 'chef') && (
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 'var(--spacing-md)' }}>
                     <button
                       onClick={() => setIsEditingGroups(true)}
