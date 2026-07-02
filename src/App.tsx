@@ -114,6 +114,7 @@ function App() {
   }, []);
 
   const currentMonth = getCurrentMonth();
+  const selectedGameMonth = selectedDate.slice(0, 7);
 
   // Compute last month string (YYYY-MM)
   const lastMonth = useMemo(() => {
@@ -357,7 +358,7 @@ function App() {
   const handleGroupsGenerated = async (groups: Group[]) => {
     // Update daily groups (replaces existing incomplete games for this date)
     // This prevents duplicates if the user clicks save multiple times or edits
-    const success = await updateDailyGroups(selectedDate, currentMonth, groups);
+    const success = await updateDailyGroups(selectedDate, selectedGameMonth, groups);
 
     if (success) {
       await reloadData(); // Update everything
@@ -785,7 +786,7 @@ function App() {
                     <button
                       onClick={async () => {
                         if (window.confirm(t('history.deleteConfirmation') || 'Are you sure you want to delete all scheduled games for today?')) {
-                          const success = await updateDailyGroups(selectedDate, currentMonth, []);
+                          const success = await updateDailyGroups(selectedDate, selectedGameMonth, []);
                           if (success) {
                             await reloadData();
                             setIsEditingGroups(false);
@@ -817,7 +818,7 @@ function App() {
                   presentPlayers={presentPlayers}
                   initialGroups={drawnGroups}
                   onGroupsCreated={async (newGroups) => {
-                    const success = await updateDailyGroups(selectedDate, currentMonth, newGroups);
+                    const success = await updateDailyGroups(selectedDate, selectedGameMonth, newGroups);
                     if (success) {
                       await reloadData();
                       setIsEditingGroups(false);
