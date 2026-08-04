@@ -103,6 +103,7 @@ function App() {
   const [manualEntry, setManualEntry] = useState(false);
   const [isEditingGroups, setIsEditingGroups] = useState(false);
   const [isPublicView, setIsPublicView] = useState(false);
+  const [showPlayerSelection, setShowPlayerSelection] = useState(true);
 
   // Check for public view on initial load
   useEffect(() => {
@@ -498,6 +499,7 @@ function App() {
                 {canAccessView('newGame') && (
                   <button
                     onClick={() => {
+                      setShowPlayerSelection(true);
                       setCurrentView('newGame');
                       // Auto-load today's groups if available
                       if (todaysGames.length > 0 && selectedDate === new Date().toISOString().split('T')[0]) {
@@ -577,7 +579,14 @@ function App() {
 
               {canAccessView('newGame') && (
                 <div className="mt-lg">
-                  <button onClick={() => setCurrentView('newGame')} className="btn btn-primary btn-lg" style={{ width: '100%' }}>
+                  <button
+                    onClick={() => {
+                      setShowPlayerSelection(true);
+                      setCurrentView('newGame');
+                    }}
+                    className="btn btn-primary btn-lg"
+                    style={{ width: '100%' }}
+                  >
                     {t('dashboard.startNewGame')}
                   </button>
                 </div>
@@ -593,6 +602,7 @@ function App() {
                 // If date is provided, set it. Otherwise fallback to first game's date
                 const targetDate = date || (todaysGames[0]?.date) || new Date().toISOString().split('T')[0];
                 setSelectedDate(targetDate);
+                setShowPlayerSelection(false);
 
                 // Load the groups for the target date
                 const gamesForDate = todaysGames.filter(g => g.date === targetDate);
@@ -746,29 +756,6 @@ function App() {
               </div>
             )}
 
-            {drawnGroups.length > 0 && !isEditingGroups && (
-              <>
-                {(role === 'admin' || role === 'game_manager' || role === 'chef') && (
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 'var(--spacing-md)' }}>
-                    <button
-                      onClick={() => setIsEditingGroups(true)}
-                      className="btn btn-secondary"
-                      style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-xs)' }}
-                    >
-                      {t('manual.editGroups') || 'Edit Groups'}
-                    </button>
-                  </div>
-                )}
-                <ResultsEntry
-                  groups={drawnGroups}
-                  onResultsSubmit={handleResultsSubmit}
-                  onGroupSubmit={handleGroupResultSubmit}
-                  currentUserId={userPlayer?.id}
-                  date={selectedDate}
-                />
-              </>
-            )}
-
             {!isWeekend(selectedDate) && (
               <>
                 <AttendanceSelector
@@ -778,9 +765,11 @@ function App() {
                   playersWhoPlayedToday={getPlayersWhoPlayedToday()}
                   activePlayerIds={activePlayerIds}
                   selectedDate={selectedDate}
+                  isExpanded={showPlayerSelection}
+                  onToggleExpanded={() => setShowPlayerSelection(prev => !prev)}
                 />
 
-                {selectedPlayerIds.length >= 2 && !manualEntry && drawnGroups.length === 0 && (
+                {showPlayerSelection && selectedPlayerIds.length >= 2 && !manualEntry && drawnGroups.length === 0 && (
                   <GroupDrawer
                     presentPlayers={presentPlayers}
                     groups={drawnGroups}
@@ -794,7 +783,7 @@ function App() {
             )}
 
 
-            {manualEntry && selectedPlayerIds.length >= 2 && !isWeekend(selectedDate) && !isEditingGroups && drawnGroups.length === 0 && (
+            {showPlayerSelection && manualEntry && selectedPlayerIds.length >= 2 && !isWeekend(selectedDate) && !isEditingGroups && drawnGroups.length === 0 && (
               <ManualGroupCreator
                 presentPlayers={presentPlayers}
                 onGroupsCreated={handleGroupsGenerated}
@@ -860,6 +849,29 @@ function App() {
                   }}
                 />
               </div>
+            )}
+
+            {drawnGroups.length > 0 && !isEditingGroups && (
+              <>
+                {(role === 'admin' || role === 'game_manager' || role === 'chef') && (
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 'var(--spacing-md)' }}>
+                    <button
+                      onClick={() => setIsEditingGroups(true)}
+                      className="btn btn-secondary"
+                      style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-xs)' }}
+                    >
+                      {t('manual.editGroups') || 'Edit Groups'}
+                    </button>
+                  </div>
+                )}
+                <ResultsEntry
+                  groups={drawnGroups}
+                  onResultsSubmit={handleResultsSubmit}
+                  onGroupSubmit={handleGroupResultSubmit}
+                  currentUserId={userPlayer?.id}
+                  date={selectedDate}
+                />
+              </>
             )}
           </div>
         )

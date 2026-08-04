@@ -9,6 +9,8 @@ interface AttendanceSelectorProps {
     playersWhoPlayedToday: Set<string>;
     activePlayerIds: Set<string>;
     selectedDate: string;
+    isExpanded?: boolean;
+    onToggleExpanded?: () => void;
 }
 
 export const AttendanceSelector: React.FC<AttendanceSelectorProps> = ({
@@ -17,7 +19,9 @@ export const AttendanceSelector: React.FC<AttendanceSelectorProps> = ({
     onSelectionChange,
     playersWhoPlayedToday,
     activePlayerIds,
-    selectedDate
+    selectedDate,
+    isExpanded = true,
+    onToggleExpanded
 }) => {
     const { t } = useLanguage();
     const selectionSet = new Set(selectedPlayerIds);
@@ -163,61 +167,95 @@ export const AttendanceSelector: React.FC<AttendanceSelectorProps> = ({
 
     return (
         <div className="card fade-in">
-            <div className="card-header">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h3 className="card-title" style={{ marginBottom: 'var(--spacing-xs)' }}>
+            <div
+                className="card-header"
+                style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    cursor: onToggleExpanded ? 'pointer' : 'default',
+                    marginBottom: isExpanded ? 'var(--spacing-lg)' : 0,
+                    borderBottom: isExpanded ? '1px solid var(--color-border)' : 'none',
+                    paddingBottom: isExpanded ? 'var(--spacing-md)' : 0
+                }}
+                onClick={onToggleExpanded}
+            >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--spacing-md)', width: '100%' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)', minWidth: 0 }}>
+                        <h3 className="card-title" style={{ margin: 0 }}>
                             {t('attendance.title')}
                         </h3>
-                        <p className="text-muted" style={{ margin: 0, fontSize: '0.875rem' }}>
-                            {t('attendance.description')}
-                        </p>
+                        {onToggleExpanded && (
+                            <span style={{ fontSize: '0.8rem', opacity: 0.7 }}>
+                                {isExpanded ? '▼' : '▶'}
+                            </span>
+                        )}
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-xs)', alignItems: 'flex-end' }}>
-                        <div className="badge badge-primary" style={{ fontSize: '1rem', padding: 'var(--spacing-sm) var(--spacing-md)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                        <div style={{
+                            padding: '4px 10px',
+                            borderRadius: '999px',
+                            background: 'var(--color-bg-tertiary)',
+                            border: '1px solid var(--color-border-light)',
+                            color: 'var(--color-text-primary)',
+                            fontSize: '0.8rem',
+                            fontWeight: 700,
+                            lineHeight: 1.2,
+                            whiteSpace: 'nowrap'
+                        }}>
                             {selectionSet.size} {t('attendance.selected')}
                         </div>
-                        <div className="text-muted" style={{ fontSize: '0.75rem' }}>
+                        <div className="text-muted" style={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
                             {availablePlayers.length} / {players.length} {t('attendance.available')}
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div className="flex gap-sm mb-md">
-                <button onClick={selectAll} className="btn btn-secondary btn-sm">
-                    {t('attendance.selectAll')}
-                </button>
-                <button onClick={selectRecent} className="btn btn-secondary btn-sm">
-                    {t('attendance.selectRecent')}
-                </button>
-                <button onClick={selectNone} className="btn btn-secondary btn-sm">
-                    {t('attendance.clearAll')}
-                </button>
-            </div>
-
-            {players.length === 0 ? (
-                <p className="text-muted text-center" style={{ padding: 'var(--spacing-xl)' }}>
-                    {t('attendance.noPlayers')}
+            {isExpanded && (
+                <p className="text-muted" style={{ margin: '0 0 var(--spacing-md) 0', fontSize: '0.875rem' }}>
+                    {t('attendance.description')}
                 </p>
-            ) : (
-                <div>
-                    {renderSection(
-                        t('attendance.recentlyActive'),
-                        activePlayers,
-                        activeExpanded,
-                        () => setActiveExpanded(prev => !prev)
-                    )}
-                    {renderSection(
-                        t('attendance.lessActive'),
-                        inactivePlayers,
-                        inactiveExpanded,
-                        () => setInactiveExpanded(prev => !prev)
-                    )}
-                </div>
             )}
 
-            {selectionSet.size > 0 && selectionSet.size < 2 && (
+            {isExpanded && (
+                <>
+                    <div className="flex gap-sm mb-md">
+                        <button onClick={selectAll} className="btn btn-secondary btn-sm">
+                            {t('attendance.selectAll')}
+                        </button>
+                        <button onClick={selectRecent} className="btn btn-secondary btn-sm">
+                            {t('attendance.selectRecent')}
+                        </button>
+                        <button onClick={selectNone} className="btn btn-secondary btn-sm">
+                            {t('attendance.clearAll')}
+                        </button>
+                    </div>
+
+                    {players.length === 0 ? (
+                        <p className="text-muted text-center" style={{ padding: 'var(--spacing-xl)' }}>
+                            {t('attendance.noPlayers')}
+                        </p>
+                    ) : (
+                        <div>
+                            {renderSection(
+                                t('attendance.recentlyActive'),
+                                activePlayers,
+                                activeExpanded,
+                                () => setActiveExpanded(prev => !prev)
+                            )}
+                            {renderSection(
+                                t('attendance.lessActive'),
+                                inactivePlayers,
+                                inactiveExpanded,
+                                () => setInactiveExpanded(prev => !prev)
+                            )}
+                        </div>
+                    )}
+                </>
+            )}
+
+            {isExpanded && selectionSet.size > 0 && selectionSet.size < 2 && (
                 <p style={{ color: 'var(--color-accent-danger)', fontSize: '0.875rem', marginTop: 'var(--spacing-md)' }}>
                     {t('attendance.minPlayers')}
                 </p>
