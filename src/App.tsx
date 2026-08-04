@@ -746,6 +746,29 @@ function App() {
               </div>
             )}
 
+            {drawnGroups.length > 0 && !isEditingGroups && (
+              <>
+                {(role === 'admin' || role === 'game_manager' || role === 'chef') && (
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 'var(--spacing-md)' }}>
+                    <button
+                      onClick={() => setIsEditingGroups(true)}
+                      className="btn btn-secondary"
+                      style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-xs)' }}
+                    >
+                      {t('manual.editGroups') || 'Edit Groups'}
+                    </button>
+                  </div>
+                )}
+                <ResultsEntry
+                  groups={drawnGroups}
+                  onResultsSubmit={handleResultsSubmit}
+                  onGroupSubmit={handleGroupResultSubmit}
+                  currentUserId={userPlayer?.id}
+                  date={selectedDate}
+                />
+              </>
+            )}
+
             {!isWeekend(selectedDate) && (
               <>
                 <AttendanceSelector
@@ -837,29 +860,6 @@ function App() {
                   }}
                 />
               </div>
-            )}
-
-            {drawnGroups.length > 0 && !isEditingGroups && (
-              <>
-                {(role === 'admin' || role === 'game_manager' || role === 'chef') && (
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 'var(--spacing-md)' }}>
-                    <button
-                      onClick={() => setIsEditingGroups(true)}
-                      className="btn btn-secondary"
-                      style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-xs)' }}
-                    >
-                      {t('manual.editGroups') || 'Edit Groups'}
-                    </button>
-                  </div>
-                )}
-                <ResultsEntry
-                  groups={drawnGroups}
-                  onResultsSubmit={handleResultsSubmit}
-                  onGroupSubmit={handleGroupResultSubmit}
-                  currentUserId={userPlayer?.id}
-                  date={selectedDate}
-                />
-              </>
             )}
           </div>
         )
